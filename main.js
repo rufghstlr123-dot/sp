@@ -755,9 +755,9 @@ function renderRoster() {
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     if (currentCalendarType === '행사장') {
-        rosterGrid.style.gridTemplateColumns = `60px 120px repeat(${daysInMonth}, minmax(60px, 1fr))`;
+        rosterGrid.style.gridTemplateColumns = `60px 120px repeat(${daysInMonth}, minmax(80px, 1fr))`;
     } else {
-        rosterGrid.style.gridTemplateColumns = `minmax(180px, auto) repeat(${daysInMonth}, minmax(60px, 1fr))`;
+        rosterGrid.style.gridTemplateColumns = `minmax(180px, auto) repeat(${daysInMonth}, minmax(80px, 1fr))`;
     }
 
     let currentRowIdx = 0;
