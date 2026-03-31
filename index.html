@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>서비스데스크 판촉캘린더</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <!-- Firebase SDK (v8 compat) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+
+<body>
+  <div id="login-container" class="login-overlay">
+    <div class="login-card">
+      <div class="login-header">
+        <h1>서비스데스크 판촉캘린더</h1>
+        <p>로그인이 필요합니다</p>
+      </div>
+      <div class="login-form">
+        <div class="form-group">
+          <label for="login-id">아이디</label>
+          <input type="text" id="login-id" placeholder="아이디를 입력하세요">
+        </div>
+        <div class="form-group">
+          <label for="login-pw">비밀번호</label>
+          <input type="password" id="login-pw" placeholder="비밀번호를 입력하세요">
+        </div>
+        <div id="login-error" class="error-msg" style="margin-top: 0.5rem; text-align: center;"></div>
+        <button id="login-btn" class="primary-btn full-width">로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-app" class="app-container" style="display: none;">
+    <header class="app-header">
+      <div class="header-left">
+        <h1>서비스데스크 판촉캘린더</h1>
+      </div>
+      <div id="header-buttons-group" style="display: flex; gap: 0.5rem; align-items: center;">
+        <button id="excluded-brands-btn" class="secondary-btn header-action-btn"
+          style="margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;">지급제외 브랜드</button>
+        <button id="interest-free-btn" class="secondary-btn header-action-btn"
+          style="margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;">무이자</button>
+      </div>
+      <div class="month-navigation">
+        <button id="prev-btn" class="nav-btn" aria-label="Previous Month">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+        <h2 id="current-month-display">2026년 2월</h2>
+        <button id="next-btn" class="nav-btn" aria-label="Next Month">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+      <div class="header-right" style="display: flex; align-items: center; gap: 0.5rem;">
+        <button id="search-btn" class="secondary-btn"
+          style="padding: 0.4rem 0.8rem; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; border-color: #cbd5e1; color: #475569; margin: 0;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          검색
+        </button>
+        <span id="user-role-display"
+          style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500; margin-left: 0.5rem; margin-right: 0.5rem;"></span>
+        <button id="logout-btn" class="danger-btn" style="opacity: 1; font-size: 0.8rem; margin: 0;">로그아웃</button>
+      </div>
+    </header>
+
+    <div class="main-content">
+      <aside class="employee-sidebar">
+        <!-- Calendar Selection -->
+        <div class="sidebar-header" style="border-bottom: none; padding-bottom: 0;">
+          <h3>캘린더 선택</h3>
+        </div>
+        <div class="calendar-tabs-sidebar" id="calendar-tabs">
+          <button class="cal-tab active" data-type="사은행사">사은행사</button>
+          <button class="cal-tab" data-type="이벤트">이벤트</button>
+          <button class="cal-tab" data-type="행사장">행사장</button>
+        </div>
+
+        <div class="sidebar-header admin-only">
+          <h3>행사 관리</h3>
+        </div>
+        <div class="sidebar-body admin-only">
+
+          <div class="form-group" id="sidebar-venue-floor-group" style="display: none;">
+            <label for="event-venue-floor">위치</label>
+            <input type="text" id="event-venue-floor" placeholder="예: 1F, B1 등">
+          </div>
+          <div class="form-group" id="sidebar-venue-name-group" style="display: none;">
+            <label for="event-venue-name">행사장명</label>
+            <input type="text" id="event-venue-name" placeholder="예: 이벤트홀, 소무대 등">
+          </div>
+          <div class="form-group" id="sidebar-venue-detail-group" style="display: none;">
+            <label for="event-venue-detail">상세위치</label>
+            <input type="text" id="event-venue-detail" placeholder="예: 상행 E/S 앞 등">
+          </div>
+          <div class="form-group" id="sidebar-event-type-group">
+            <label for="event-type" id="sidebar-event-type-label">행사 종류</label>
+            <select id="event-type-select">
+              <option value="자사">자사</option>
+              <option value="타사">타사</option>
+              <option value="전관">전관</option>
+              <option value="부문(패션)">부문(패션)</option>
+              <option value="부문(라이프스타일)">부문(라이프스타일)</option>
+              <option value="사은품">사은품</option>
+              <option value="직접입력">직접입력</option>
+            </select>
+            <input type="text" id="event-type" placeholder="행사 장소를 입력하세요" style="display: none;">
+          </div>
+          <div class="form-group" id="sidebar-event-name-group">
+            <label for="emp-name" id="sidebar-brand-label">행사명</label>
+            <input type="text" id="emp-name" placeholder="행사명(브랜드) 입력">
+          </div>
+          <div class="form-group" id="sidebar-event-details-group">
+            <label for="event-details" id="event-details-label">행사 내용</label>
+            <textarea id="event-details" placeholder="행사 상세 내용 입력"></textarea>
+          </div>
+          <div class="form-group" id="sidebar-brand-group" style="display: none;">
+            <label for="event-brand">대상 브랜드</label>
+            <textarea id="event-brand" placeholder="대상 브랜드 입력"></textarea>
+          </div>
+          <div class="form-group">
+            <label>행사 기간</label>
+            <div class="period-input-container">
+              <div class="period-row">
+                <input type="text" id="event-start" placeholder="YYYY-MM-DD" maxlength="10">
+                <span>부터</span>
+              </div>
+              <div class="period-row">
+                <input type="text" id="event-end" placeholder="YYYY-MM-DD" maxlength="10">
+                <span>까지</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-group" id="sidebar-budget-group">
+            <label for="event-budget">예산 (단위: 만원)</label>
+            <input type="number" id="event-budget" placeholder="예산 입력">
+          </div>
+          <div class="form-group" id="sidebar-team-group" style="display: none;">
+            <label for="event-team">담당팀</label>
+            <input type="text" id="event-team" placeholder="담당팀 입력">
+          </div>
+          <div class="form-group" id="sidebar-memo-section" style="display: none;">
+            <label for="memo-area">메모</label>
+            <textarea id="memo-area" placeholder="메모를 입력하세요..."></textarea>
+          </div>
+          <div id="emp-error-msg" class="error-msg"></div>
+          <div id="edit-btn-group" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+            <div style="display: flex; gap: 0.5rem;">
+              <button id="update-emp-btn" class="primary-btn" style="flex: 1; margin: 0;">수정</button>
+              <button id="duplicate-emp-btn" class="secondary-btn" style="flex: 1; margin: 0;">복사</button>
+            </div>
+            <button id="delete-emp-btn" class="danger-btn"
+              style="padding: 0.6rem; font-size: 0.85rem; margin-top: 5px; width: 100%;">삭제</button>
+          </div>
+          <button id="save-emp-btn" class="primary-btn full-width" style="margin-top: 1rem;">등록하기</button>
+        </div>
+      </aside>
+
+      <main class="roster-wrapper">
+        <div id="roster-grid" class="roster-grid">
+          <!-- Roster headers and rows injected by JS -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Event Detail Modal -->
+  <div id="event-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-event-name">행사 정보</h3>
+        <button id="modal-close-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-subtitle" id="modal-event-type">자사</div>
+        <div class="form-group" id="modal-venue-floor-group" style="display:none;">
+          <label>위치</label>
+          <div id="modal-event-venue-floor" style="font-size: 0.9rem; color: var(--text-main); font-weight: bold;">
+          </div>
+        </div>
+        <div class="form-group" id="modal-venue-name-group" style="display:none;">
+          <label>행사장명</label>
+          <div id="modal-event-venue-name" style="font-size: 0.9rem; color: var(--text-main); font-weight: bold;"></div>
+        </div>
+        <div class="form-group" id="modal-venue-detail-group" style="display:none;">
+          <label>상세위치</label>
+          <div id="modal-event-venue-detail" style="font-size: 0.9rem; color: var(--text-main); font-weight: bold;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>행사 기간</label>
+          <div id="modal-event-period" style="font-size: 0.9rem; color: var(--text-main);"></div>
+        </div>
+        <div class="form-group" id="modal-budget-group">
+          <label>예산</label>
+          <div id="modal-event-budget" style="font-size: 0.9rem; color: #ef4444; font-weight: bold;"></div>
+        </div>
+        <div class="form-group" id="modal-event-details-group">
+          <label id="modal-details-label">행사 내용</label>
+          <div id="modal-event-details"
+            style="font-size: 0.9rem; color: var(--text-main); white-space: pre-wrap; word-break: break-all;"></div>
+        </div>
+        <div class="form-group" id="modal-memo-group" style="display: none;">
+          <label>메모</label>
+          <div id="modal-event-memo"
+            style="font-size: 0.9rem; color: var(--text-main); white-space: pre-wrap; word-break: break-all;"></div>
+        </div>
+        <div class="form-group" id="modal-team-group" style="display: none;">
+          <label>담당팀</label>
+          <div id="modal-event-team" style="font-size: 0.9rem; color: var(--text-main);"></div>
+        </div>
+        <div class="form-group" id="modal-brand-group">
+          <label id="modal-brand-label">대상 브랜드</label>
+          <div id="modal-event-brand"
+            style="font-size: 0.9rem; color: var(--text-main); white-space: pre-wrap; word-break: break-all;"></div>
+        </div>
+        <div id="modal-edit-btn-group" style="margin-top: 1.5rem; display: flex; gap: 0.5rem;" class="admin-only">
+          <button id="modal-edit-btn" class="primary-btn" style="flex: 1;">수정하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Excluded Brands Modal -->
+  <div id="excluded-brands-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="color: var(--pr-color);">지급제외 브랜드</h3>
+        <button id="excluded-modal-close-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="excluded-view-container"
+          style="background: #f8fafc; padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <ul id="excluded-brands-list"
+            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+            <!-- Content will be generated by JS -->
+          </ul>
+        </div>
+        <div id="excluded-edit-container" style="display: none;">
+          <textarea id="excluded-brands-input"
+            style="width: 100%; height: 200px; padding: 0.75rem; border: 1.5px solid var(--border-color); border-radius: 8px; font-family: var(--font-family); font-size: 0.9rem; resize: none;"
+            placeholder="지급제외 브랜드를 한 줄씩 입력하세요."></textarea>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">* 한 줄에 하나씩 입력해주세요.</p>
+        </div>
+        <div id="excluded-action-btns" class="admin-only">
+          <button id="excluded-edit-btn" class="primary-btn" style="flex: 1; margin: 0;">수정하기</button>
+          <button id="excluded-save-btn" class="primary-btn" style="flex: 1; display: none; margin: 0;">저장하기</button>
+          <button id="excluded-cancel-btn" class="secondary-btn"
+            style="flex: 1; display: none; margin: 0; background-color: #f1f5f9; border-color: #cbd5e1; color: #475569;">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interest-Free Installment Modal -->
+  <div id="interest-free-modal" class="modal-backdrop hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 style="color: var(--pr-color);">무이자할부</h3>
+        <button id="interest-free-modal-close-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="interest-free-view-container"
+          style="background: #f8fafc; padding: 1.2rem; border-radius: 8px; border: 1px solid var(--border-color);">
+          <ul id="interest-free-list"
+            style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+            <!-- Content will be generated by JS -->
+          </ul>
+        </div>
+        <div id="interest-free-edit-container" style="display: none;">
+          <textarea id="interest-free-input"
+            style="width: 100%; height: 200px; padding: 0.75rem; border: 1.5px solid var(--border-color); border-radius: 8px; font-family: var(--font-family); font-size: 0.9rem; resize: none;"
+            placeholder="무이자할부 혜택을 한 줄씩 입력하세요."></textarea>
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 5px;">* 한 줄에 하나씩 입력해주세요.</p>
+        </div>
+        <div id="interest-free-action-btns" class="admin-only">
+          <button id="interest-free-edit-btn" class="primary-btn" style="flex: 1; margin: 0;">수정하기</button>
+          <button id="interest-free-save-btn" class="primary-btn"
+            style="flex: 1; display: none; margin: 0;">저장하기</button>
+          <button id="interest-free-cancel-btn" class="secondary-btn"
+            style="flex: 1; display: none; margin: 0; background-color: #f1f5f9; border-color: #cbd5e1; color: #475569;">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search Modal -->
+  <div id="search-modal" class="modal-backdrop hidden">
+    <div class="modal" style="max-width: 650px; width: 95%; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h3 style="color: var(--pr-color); display: flex; align-items: center; gap: 8px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          통합 검색
+        </h3>
+        <button id="search-modal-close-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="overflow: hidden; display: flex; flex-direction: column; flex: 1; gap: 1rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <input type="text" id="search-input" placeholder="행사명, 브랜드, 장소, 상세내용 등을 입력하세요..."
+            style="font-size: 1rem; padding: 1rem; border-width: 2px;">
+        </div>
+        <div id="search-results-container"
+          style="flex: 1; overflow-y: auto; background: #fff; border-radius: 8px; border: 1px solid var(--border-color); min-height: 300px;">
+          <div id="search-no-results" style="text-align: center; padding: 4rem 2rem; color: var(--text-muted);">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">🔍</div>
+            검색어를 입력하여 행사를 찾아보세요.
+          </div>
+          <ul id="search-results-list"
+            style="list-style: none; padding: 0.5rem; margin: 0; display: flex; flex-direction: column; gap: 0.4rem;">
+            <!-- Results injected by JS -->
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script src="main.js"></script>
+</body>
+
+</html>
