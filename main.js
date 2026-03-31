@@ -1163,8 +1163,8 @@ function renderRoster() {
                             const gridDisplayDetail = e.category === '행사장' ? '' : (e.details || '');
 
                             eventNamesHTML = `<div title="${gridDisplayDetail.replace(/"/g, '&quot;')} (클릭하여 수정)" 
-                                   style="font-size: 0.85rem; color: var(--text-main); text-align: left; position: absolute; left: 8px; top: 50%; transform: translateY(-50%); white-space: nowrap; z-index: 20; pointer-events: none; display: flex; flex-direction: column; gap: 5px;">
-                                <div style="display: flex; align-items: baseline; gap: 6px;">
+                                   style="font-size: 0.85rem; color: var(--text-main); text-align: left; position: absolute; left: 8px; right: 8px; top: 50%; transform: translateY(-50%); white-space: normal; word-break: break-all; z-index: 20; pointer-events: none; display: flex; flex-direction: column; gap: 5px;">
+                                <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                                     <strong style="font-weight:700; line-height: 1.1;">${gridDisplayName}</strong>
                                     ${(e.category !== '행사장' && e.budget) ? `<span style="font-size: 0.72rem; font-weight: 700; color: #ef4444; opacity: 1;">[${e.budget}만]</span>` : ''}
                                 </div>

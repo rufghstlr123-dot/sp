@@ -322,9 +322,8 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
 .emp-display-name {
   font-weight: 600;
   font-size: 0.9rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-all;
 }
 
 .event-details-text {
