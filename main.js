@@ -217,8 +217,28 @@ function init() {
             if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = fallbackData;
             if (key === LS_KEYS.CHECKED_STATUS) checkedData = fallbackData;
             if (key === LS_KEYS.EMPLOYEES) {
-                allMonthsEmployeesData = fallbackData;
-                loadEmployeesForCurrentMonth();
+                let isNested = false;
+                if (fallbackData) {
+                    for (let fKey in fallbackData) {
+                        if (fKey.match(/^\d{4}-\d{1,2}$/)) {
+                            isNested = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNested) {
+                    let flattened = {};
+                    for (let mKey in fallbackData) {
+                        if (typeof fallbackData[mKey] === 'object') {
+                            Object.assign(flattened, fallbackData[mKey]);
+                        }
+                    }
+                    employeesData = flattened;
+                    db.ref(LS_KEYS.EMPLOYEES).set(flattened);
+                } else {
+                    employeesData = fallbackData;
+                }
             }
 
             if (key === LS_KEYS.EXCLUDED_BRANDS) {
@@ -343,14 +363,11 @@ function loadAllLocalData() {
 }
 
 function loadEmployeesForCurrentMonth() {
-    const key = getMonthKey();
-    employeesData = allMonthsEmployeesData[key] || {};
+    // No-op: Data is now global and unpartitioned, so we don't need to load per month
 }
 
 function saveCurrentMonthEmployees() {
-    const key = getMonthKey();
-    allMonthsEmployeesData[key] = employeesData;
-    saveLocalState(LS_KEYS.EMPLOYEES, allMonthsEmployeesData);
+    saveLocalState(LS_KEYS.EMPLOYEES, employeesData);
 }
 
 
