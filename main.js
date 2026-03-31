@@ -201,23 +201,40 @@ function init() {
     Object.keys(LS_KEYS).forEach(k => {
         const key = LS_KEYS[k];
         db.ref(key).on('value', (snapshot) => {
-            const data = snapshot.val() || {};
+            const data = snapshot.val();
+            
+            // Backup to localStorage so that getExcludedBrands etc. read the latest data
+            if (data !== null) {
+                localStorage.setItem(key, JSON.stringify(data));
+            } else {
+                localStorage.removeItem(key);
+            }
+
+            const fallbackData = data || {};
 
             // Map Firebase data to local state variables
-            if (key === LS_KEYS.SCHEDULE) scheduleData = data;
-            if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = data;
-            if (key === LS_KEYS.CHECKED_STATUS) checkedData = data;
+            if (key === LS_KEYS.SCHEDULE) scheduleData = fallbackData;
+            if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = fallbackData;
+            if (key === LS_KEYS.CHECKED_STATUS) checkedData = fallbackData;
             if (key === LS_KEYS.EMPLOYEES) {
-                allMonthsEmployeesData = data;
+                allMonthsEmployeesData = fallbackData;
                 loadEmployeesForCurrentMonth();
             }
-            // Add other keys if needed...
+
+            if (key === LS_KEYS.EXCLUDED_BRANDS) {
+                const excludedModal = document.getElementById('excluded-brands-modal');
+                if (excludedModal && !excludedModal.classList.contains('hidden')) {
+                    renderExcludedBrands();
+                }
+            }
 
             if (typeof renderRoster === 'function') {
                 renderRoster();
             }
         });
     });
+    
+    listenToCurrentMonthInterestFree();
 
     setupEventListeners();
     setupGlobalKeyboard();
@@ -285,6 +302,28 @@ function hasPermission(action, targetEmpId = null) {
 
     // For read-only mode, only admin has permissions
     return false;
+}
+
+let currentInterestFreeRef = null;
+function listenToCurrentMonthInterestFree() {
+    if (currentInterestFreeRef) {
+        currentInterestFreeRef.off();
+    }
+    const monthKey = `${LS_KEYS.INTEREST_FREE}_${getMonthKey()}`;
+    currentInterestFreeRef = db.ref(monthKey);
+    currentInterestFreeRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data !== null) {
+            localStorage.setItem(monthKey, JSON.stringify(data));
+        } else {
+            localStorage.removeItem(monthKey);
+        }
+        
+        const modal = document.getElementById('interest-free-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            renderInterestFree();
+        }
+    });
 }
 
 
@@ -1421,8 +1460,8 @@ function handleExternalPaste(dataMatrix) {
 
 // --- Interaction ---
 function setupEventListeners() {
-    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); renderRoster(); };
-    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); renderRoster(); };
+    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
+    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
 
     if (eventTypeSelect && eventTypeInput) {
         eventTypeSelect.addEventListener('change', () => {
