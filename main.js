@@ -1134,7 +1134,7 @@ function renderRoster() {
                     }
 
                     if (laneIdx < lanes.length - 1) {
-                        cell.style.setProperty('border-bottom', '2px solid #888', 'important');
+                        cell.style.setProperty('border-bottom', '1px dashed black', 'important');
                     } else {
                         cell.style.setProperty('border-bottom', bottomBorderStyle, 'important');
                     }
