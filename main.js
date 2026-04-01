@@ -954,10 +954,9 @@ function renderRoster() {
         }
 
         const nextCompType = typesToRender[typeIndex + 1];
-        const isLastTypeInGroup = !nextCompType || (currentCalendarType === '행사장' ? 
-            (nextCompType.split('|||')[0] !== compType.split('|||')[0] || nextCompType.split('|||')[1] !== compType.split('|||')[1]) : 
-            nextCompType !== compType);
-        const bottomBorderStyle = isLastTypeInGroup ? '2.5px solid #222' : '1px solid black';
+        const isLastTypeInFloor = currentCalendarType === '행사장' &&
+            (!nextCompType || nextCompType.split('|||')[0] !== compType.split('|||')[0]);
+        const bottomBorderStyle = isLastTypeInFloor ? '2.5px solid #222' : '1px solid black';
 
         try {
             const firstDayOfMonth = new Date(year, month, 1);
@@ -1135,7 +1134,7 @@ function renderRoster() {
                     }
 
                     if (laneIdx < lanes.length - 1) {
-                        cell.style.setProperty('border-bottom', '2px solid #222', 'important');
+                        cell.style.setProperty('border-bottom', '1px dashed black', 'important');
                     } else {
                         cell.style.setProperty('border-bottom', bottomBorderStyle, 'important');
                     }
