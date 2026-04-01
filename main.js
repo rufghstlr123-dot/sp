@@ -1916,31 +1916,36 @@ function performSearch(query) {
     const results = [];
     const lowerQuery = query.toLowerCase();
 
-    // Search across all months in allMonthsEmployeesData
-    Object.entries(allMonthsEmployeesData).forEach(([monthKey, monthData]) => {
-        Object.entries(monthData).forEach(([eventId, event]) => {
-            const name = (event.name || '').toLowerCase();
-            const brand = (event.brand || '').toLowerCase();
-            const details = (event.details || '').toLowerCase();
-            const floor = (event.floor || '').toLowerCase();
-            const type = (event.type || '').toLowerCase();
-            const vDetail = (event.venueDetail || '').toLowerCase();
-            const team = (event.team || '').toLowerCase();
+    // Search across all events in employeesData
+    Object.entries(employeesData).forEach(([eventId, event]) => {
+        const name = (event.name || '').toLowerCase();
+        const brand = (event.brand || '').toLowerCase();
+        const details = (event.details || '').toLowerCase();
+        const floor = (event.floor || '').toLowerCase();
+        const type = (event.type || '').toLowerCase();
+        const vDetail = (event.venueDetail || '').toLowerCase();
+        const team = (event.team || '').toLowerCase();
 
-            if (name.includes(lowerQuery) ||
-                brand.includes(lowerQuery) ||
-                details.includes(lowerQuery) ||
-                floor.includes(lowerQuery) ||
-                type.includes(lowerQuery) ||
-                vDetail.includes(lowerQuery) ||
-                team.includes(lowerQuery)) {
+        if (name.includes(lowerQuery) ||
+            brand.includes(lowerQuery) ||
+            details.includes(lowerQuery) ||
+            floor.includes(lowerQuery) ||
+            type.includes(lowerQuery) ||
+            vDetail.includes(lowerQuery) ||
+            team.includes(lowerQuery)) {
 
-                // Avoid duplicates if same eventId exists in multiple months (though usually they are different IDs but just in case)
-                if (!results.find(r => r.id === eventId)) {
-                    results.push({ id: eventId, monthKey, ...event });
+            // Avoid duplicates just in case
+            if (!results.find(r => r.id === eventId)) {
+                let monthKey = '';
+                if (event.startDate) {
+                    const [y, m] = event.startDate.split('-');
+                    monthKey = `${parseInt(y, 10)}-${parseInt(m, 10)}`;
+                } else {
+                    monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth() + 1}`;
                 }
+                results.push({ id: eventId, monthKey, ...event });
             }
-        });
+        }
     });
 
     if (results.length === 0) {
