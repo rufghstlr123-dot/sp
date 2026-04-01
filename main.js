@@ -1774,7 +1774,7 @@ function setupEventListeners() {
                     if (sidebarBrandLabel) sidebarBrandLabel.textContent = '행사명';
                     if (sidebarBudgetGroup) sidebarBudgetGroup.style.display = 'block';
 
-                    if (sidebarMemoSection) sidebarMemoSection.style.display = 'none';
+                    if (sidebarMemoSection) sidebarMemoSection.style.display = 'block';
                     if (eventDetailsLabel) eventDetailsLabel.textContent = '행사 내용';
                     if (eventDetailsInput) eventDetailsInput.placeholder = '행사 상세 내용 입력';
                 }
