@@ -1149,8 +1149,8 @@ function renderRoster() {
                     let cellBackgroundColor = "";
                     if (eventData) {
                         const [id, e] = eventData;
-                        cell.style.setProperty('border-left', '1px solid black', 'important');
-                        cell.style.setProperty('border-right', '1px solid black', 'important');
+                        cell.style.setProperty('border-left', '2px solid #888', 'important');
+                        cell.style.setProperty('border-right', '2px solid #888', 'important');
 
                         // Define color palette for different event types with better distinction
                         const typeColors = {
