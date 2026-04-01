@@ -861,11 +861,15 @@ function renderRoster() {
         const floorHeader = document.createElement('div');
         floorHeader.className = 'r-cell r-corner';
         floorHeader.textContent = '위치';
+        floorHeader.style.left = '0';
+        floorHeader.style.zIndex = '120';
         rosterGrid.appendChild(floorHeader);
 
         const nameHeader = document.createElement('div');
         nameHeader.className = 'r-cell r-corner';
         nameHeader.textContent = '행사장명';
+        nameHeader.style.left = '60px'; // Sticky after the first 60px column
+        nameHeader.style.zIndex = '120';
         rosterGrid.appendChild(nameHeader);
     } else {
         const cornerCell = document.createElement('div');
@@ -1036,6 +1040,8 @@ function renderRoster() {
             if (currentCalendarType === '행사장') {
                 const floorCell = document.createElement('div');
                 floorCell.className = 'r-cell r-col-header';
+                floorCell.style.left = '0';
+                floorCell.style.zIndex = '95';
                 floorCell.style.setProperty('border-bottom', bottomBorderStyle, 'important');
                 if (lanes.length > 1) floorCell.style.gridRow = `span ${lanes.length}`;
                 floorCell.style.justifyContent = 'center';
@@ -1049,6 +1055,10 @@ function renderRoster() {
 
             const nameCell = document.createElement('div');
             nameCell.className = 'r-cell r-col-header employee-name-cell';
+            if (currentCalendarType === '행사장') {
+                nameCell.style.left = '60px'; // Sticky after 'floor' column
+                nameCell.style.zIndex = '95';
+            }
             nameCell.style.setProperty('border-bottom', bottomBorderStyle, 'important');
             nameCell.style.justifyContent = 'flex-start';
             nameCell.style.paddingLeft = '12px';
