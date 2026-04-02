@@ -476,6 +476,7 @@ window.showEventModal = function (empId) {
         }
         if (modalVenueFloorGroup) modalVenueFloorGroup.style.display = 'none';
         if (modalVenueNameGroup) modalVenueNameGroup.style.display = 'none';
+        if (modalVenueDetailGroup) modalVenueDetailGroup.style.display = 'none';
         if (modalTeamGroup) modalTeamGroup.style.display = 'none';
         if (modalBrandLabel) modalBrandLabel.textContent = '대상 브랜드';
         if (modalBrandGroup) modalBrandGroup.style.display = 'block';
@@ -772,9 +773,9 @@ function renderRoster() {
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     if (currentCalendarType === '행사장') {
-        rosterGrid.style.gridTemplateColumns = `60px 120px repeat(${daysInMonth}, minmax(80px, 1fr))`;
+        rosterGrid.style.gridTemplateColumns = `60px 120px repeat(${daysInMonth}, minmax(100px, 1fr))`;
     } else {
-        rosterGrid.style.gridTemplateColumns = `minmax(180px, auto) repeat(${daysInMonth}, minmax(80px, 1fr))`;
+        rosterGrid.style.gridTemplateColumns = `minmax(180px, auto) repeat(${daysInMonth}, minmax(100px, 1fr))`;
     }
 
     let currentRowIdx = 0;
@@ -1976,7 +1977,7 @@ function performSearch(query) {
                 </div>
                 <div class="search-result-info">
                     <span class="search-result-period">${res.startDate} ~ ${res.endDate}</span>
-                    <span>${res.floor ? res.floor + ' ' : ''}${res.type}${res.venueDetail ? ' (' + res.venueDetail + ')' : ''}</span>
+                    <span>${res.category === '행사장' ? (res.floor ? res.floor + ' ' : '') + res.type + (res.venueDetail ? ' (' + res.venueDetail + ')' : '') : res.type}</span>
                 </div>
                 ${res.brand ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">브랜드: ${res.brand}</div>` : ''}
             </li>
