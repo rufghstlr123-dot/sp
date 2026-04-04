@@ -195,19 +195,20 @@ function init() {
     }
 
     setupLoginListeners();
-    // loadAllLocalData(); // Replaced by Real-time Sync
+    loadAllLocalData(); // Initial load from LocalStorage for immediate UI response
 
     // --- Start Real-time Sync from Firebase ---
     Object.keys(LS_KEYS).forEach(k => {
         const key = LS_KEYS[k];
         db.ref(key).on('value', (snapshot) => {
             const data = snapshot.val();
-            
+
             // Backup to localStorage so that getExcludedBrands etc. read the latest data
             if (data !== null) {
                 localStorage.setItem(key, JSON.stringify(data));
-            } else {
-                localStorage.removeItem(key);
+            } else if (Object.keys(localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : {}).length > 0) {
+                console.warn(`Ignoring empty Firebase update for ${key} to preserve local data.`);
+                return;
             }
 
             const fallbackData = data || {};
@@ -253,7 +254,7 @@ function init() {
             }
         });
     });
-    
+
     listenToCurrentMonthInterestFree();
 
     setupEventListeners();
@@ -338,7 +339,7 @@ function listenToCurrentMonthInterestFree() {
         } else {
             localStorage.removeItem(monthKey);
         }
-        
+
         const modal = document.getElementById('interest-free-modal');
         if (modal && !modal.classList.contains('hidden')) {
             renderInterestFree();
@@ -356,9 +357,23 @@ function loadAllLocalData() {
     scheduleData = loadLocalState(LS_KEYS.SCHEDULE, {});
     customHolidaysData = loadLocalState(LS_KEYS.CUSTOM_HOLIDAYS, {});
     checkedData = loadLocalState(LS_KEYS.CHECKED_STATUS, {});
-    allMonthsEmployeesData = loadLocalState(LS_KEYS.EMPLOYEES, {});
 
-    loadEmployeesForCurrentMonth();
+    // Check current employees key
+    let loadedEmployees = loadLocalState(LS_KEYS.EMPLOYEES, null);
+
+    // Fallback to old key if current one is empty
+    if (!loadedEmployees || Object.keys(loadedEmployees).length === 0) {
+        console.log("Checking fallback for old employees key...");
+        const oldEmployeesData = loadLocalState('sd_employeesData_all', null) || loadLocalState('sd_employeesData', null);
+        if (oldEmployeesData) {
+            console.log("Found data in fallback key!");
+            loadedEmployees = oldEmployeesData;
+        }
+    }
+
+    employeesData = loadedEmployees || {};
+    allMonthsEmployeesData = employeesData;
+
     renderRoster();
 }
 
