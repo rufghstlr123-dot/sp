@@ -109,6 +109,7 @@ const eventBudgetInput = document.getElementById('event-budget');
 const eventModal = document.getElementById('event-modal');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const modalEditBtn = document.getElementById('modal-edit-btn');
+const modalEndEventBtn = document.getElementById('modal-end-event-btn');
 const modalName = document.getElementById('modal-event-name');
 const modalType = document.getElementById('modal-event-type');
 const modalPeriod = document.getElementById('modal-event-period');
@@ -531,6 +532,9 @@ window.showEventModal = function (empId) {
             closeModal();
             editEvent(empId);
         };
+        modalEndEventBtn.onclick = () => {
+            endEvent(empId);
+        };
     } else {
         const modalEditGroup = document.getElementById('modal-edit-btn-group');
         if (modalEditGroup) modalEditGroup.style.display = 'none';
@@ -541,6 +545,20 @@ window.showEventModal = function (empId) {
 
 function closeModal() {
     eventModal.classList.add('hidden');
+}
+
+function endEvent(empId) {
+    if (!hasPermission('edit_employee')) return;
+    if (confirm("정말 이 행사를 종료하시겠습니까? 종료 시 예산 정보가 삭제됩니다.")) {
+        employeesData[empId] = {
+            ...employeesData[empId],
+            isEnded: true,
+            budget: ""
+        };
+        saveCurrentMonthEmployees();
+        renderRoster();
+        closeModal();
+    }
 }
 
 window.editEvent = function (empId) {
@@ -1211,6 +1229,7 @@ function renderRoster() {
                                 <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                                     <strong style="font-weight:700; line-height: 1.1;">${gridDisplayName}</strong>
                                     ${(e.category !== '행사장' && e.budget) ? `<span style="font-size: 0.72rem; font-weight: 700; color: #ef4444; opacity: 1;">[${e.budget}만]</span>` : ''}
+                                    ${e.isEnded ? `<span style="font-size: 0.7rem; font-weight: 700; color: #fff; background: #64748b; padding: 1px 4px; border-radius: 4px; line-height: 1.1;">행사 종료</span>` : ''}
                                 </div>
                                 ${gridDisplayDetail ? `<span style="font-size: 0.72rem; font-weight: 700; opacity: 1; line-height: 1.1; padding-left: 4px;">${gridDisplayDetail}</span>` : ''}
                             </div>`;
