@@ -20,12 +20,29 @@ let allMonthsEmployeesData = {};
 
 function saveLocalState(key, data) {
     try {
-        // Save to Firebase (Remote)
-        db.ref(key).set(data);
-        // Backup to LocalStorage
+        // Backup to LocalStorage first for UI responsiveness
         localStorage.setItem(key, JSON.stringify(data));
+        // Save to Firebase (Remote) - Use set for full replace keys like Excluded Brands
+        db.ref(key).set(data);
     } catch (e) {
         console.error("Firebase Sync Error:", e);
+    }
+}
+
+/**
+ * Granular update to specific child path to avoid race conditions.
+ * @param {string} rootKey e.g. LS_KEYS.EMPLOYEES
+ * @param {string} childKey e.g. eventId
+ * @param {object} fullData The whole local object to sync with localStorage
+ */
+function updateRemoteChild(rootKey, childKey, fullData) {
+    try {
+        // 1. Update localStorage
+        localStorage.setItem(rootKey, JSON.stringify(fullData));
+        // 2. Atomic update to Firebase
+        db.ref(rootKey).child(childKey).update(fullData[childKey]);
+    } catch (e) {
+        console.error("Firebase Atomic Update Error:", e);
     }
 }
 
@@ -404,6 +421,10 @@ function saveCurrentMonthEmployees() {
     saveLocalState(LS_KEYS.EMPLOYEES, employeesData);
 }
 
+function saveSpecificEmployee(empId) {
+    updateRemoteChild(LS_KEYS.EMPLOYEES, empId, employeesData);
+}
+
 
 
 function duplicateEvent() {
@@ -429,7 +450,7 @@ function duplicateEvent() {
         sortOrder: Date.now()
     };
 
-    saveCurrentMonthEmployees();
+    saveSpecificEmployee(newId);
     renderRoster();
     cancelEditEvent();
     alert(`상담/행사가 새로운 기간(${newStart} ~ ${newEnd})으로 복사되었습니다.`);
@@ -439,7 +460,7 @@ function saveEmployee(eventType, name, details, startDate, endDate, budget, bran
     if (!hasPermission('add_employee')) return;
     const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     employeesData[newId] = { category: currentCalendarType, type: eventType || currentCalendarType, name, details, startDate, endDate, budget, brand, memo, sortOrder: Date.now() };
-    saveCurrentMonthEmployees();
+    saveSpecificEmployee(newId);
     renderRoster();
 }
 
@@ -447,7 +468,9 @@ function deleteEmployee(empId) {
     if (!hasPermission('delete_employee')) return;
     if (confirm("정말 이 행사를 삭제하시겠습니까?")) {
         delete employeesData[empId];
-        saveCurrentMonthEmployees();
+        // Delete from Firebase
+        db.ref(LS_KEYS.EMPLOYEES).child(empId).remove();
+        localStorage.setItem(LS_KEYS.EMPLOYEES, JSON.stringify(employeesData));
 
         // Remove shifts for this employee
         Object.keys(scheduleData).forEach(key => {
@@ -588,7 +611,7 @@ function endEvent(empId) {
             _prevBudget: employeesData[empId].budget || "",
             budget: ""
         };
-        saveCurrentMonthEmployees();
+        saveSpecificEmployee(empId);
         renderRoster();
         closeModal();
     }
@@ -602,7 +625,7 @@ function cancelEndEvent(empId) {
             isEnded: false,
             budget: employeesData[empId]._prevBudget || employeesData[empId].budget || ""
         };
-        saveCurrentMonthEmployees();
+        saveSpecificEmployee(empId);
         renderRoster();
         closeModal();
     }
@@ -719,7 +742,12 @@ function applyShiftChanges(updates, pushToUndo = true) {
     }
 
     if (changed) {
-        saveLocalState(LS_KEYS.SCHEDULE, scheduleData);
+        // Schedule is slightly more complex, but we can't easily do granular update for multiple cells at once efficiently
+        // while maintaining the current structure, but at least we can use .update() on the root key
+        // to merge rather than replace if other parts of the DB existed.
+        // Actually, let's just use update on the root to be safer.
+        db.ref(LS_KEYS.SCHEDULE).update(updates);
+        localStorage.setItem(LS_KEYS.SCHEDULE, JSON.stringify(scheduleData));
         renderRoster();
     }
 }
@@ -1634,7 +1662,7 @@ function setupEventListeners() {
 
             const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
             employeesData[newId] = { category: currentCalendarType, type: type || currentCalendarType, floor, venueDetail, name, details, startDate: start, endDate: end, budget, brand, team, memo, sortOrder: Date.now() };
-            saveCurrentMonthEmployees();
+            saveSpecificEmployee(newId);
             renderRoster();
 
             if (currentCalendarType === '행사장') {
@@ -1766,7 +1794,7 @@ function setupEventListeners() {
                 startDate: start,
                 endDate: end
             };
-            saveCurrentMonthEmployees();
+            saveSpecificEmployee(editingEventId);
             renderRoster();
             cancelEditEvent();
         };
