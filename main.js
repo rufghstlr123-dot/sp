@@ -394,24 +394,15 @@ function getMonthKey() {
 }
 
 function loadAllLocalData() {
+    // Only use the unified global key to prevent deviation
     scheduleData = loadLocalState(LS_KEYS.SCHEDULE, {});
     customHolidaysData = loadLocalState(LS_KEYS.CUSTOM_HOLIDAYS, {});
     checkedData = loadLocalState(LS_KEYS.CHECKED_STATUS, {});
 
-    // Check current employees key
-    let loadedEmployees = loadLocalState(LS_KEYS.EMPLOYEES, null);
-
-    // Fallback to old key if current one is empty
-    if (!loadedEmployees || Object.keys(loadedEmployees).length === 0) {
-        console.log("Checking fallback for old employees key...");
-        const oldEmployeesData = loadLocalState('sd_employeesData_all', null) || loadLocalState('sd_employeesData', null);
-        if (oldEmployeesData) {
-            console.log("Found data in fallback key!");
-            loadedEmployees = oldEmployeesData;
-        }
-    }
-
-    employeesData = loadedEmployees || {};
+    // Force load only from the master key to avoid ghost data from old formats
+    let loadedEmployees = loadLocalState(LS_KEYS.EMPLOYEES, {});
+    
+    employeesData = loadedEmployees;
     allMonthsEmployeesData = employeesData;
 
     renderRoster();
@@ -494,8 +485,7 @@ window.showEventModal = function (empId) {
     if (!e) return;
 
     if (modalName) {
-        const baseTitle = e.category === '행사장' ? (e.brand || '브랜드 정보 없음') : (e.name || '행사 정보');
-        modalName.textContent = `${baseTitle} (ID: ${empId})`;
+        modalName.textContent = e.category === '행사장' ? (e.brand || '브랜드 정보 없음') : (e.name || '행사 정보');
     }
 
     modalPeriod.textContent = `${e.startDate} ~ ${e.endDate}`;
@@ -887,6 +877,33 @@ function applyShiftToTarget(key, shift) {
 
 // --- Display Logic ---
 function renderRoster() {
+    if (!rosterGrid) return;
+    
+    // De-duplicate: If ANY instance is marked as Ended, prioritize that status.
+    const uniqueMap = new Map();
+    Object.entries(employeesData).forEach(([id, e]) => {
+        if (!e) return;
+        const key = `${e.name || ''}_${e.category || ''}_${e.startDate || ''}_${e.endDate || ''}`.trim();
+        const existing = uniqueMap.get(key);
+
+        if (!existing) {
+            uniqueMap.set(key, { id, e });
+        } else {
+            // Prioritize Ended status above all else
+            if (e.isEnded && !existing.e.isEnded) {
+                uniqueMap.set(key, { id, e });
+            } 
+            // If both same status, prioritize newer update
+            else if (e.isEnded === existing.e.isEnded) {
+                if ((e.sortOrder || 0) > (existing.e.sortOrder || 0)) {
+                    uniqueMap.set(key, { id, e });
+                }
+            }
+        }
+    });
+    const displayEmployeesData = {};
+    uniqueMap.forEach(val => displayEmployeesData[val.id] = val.e);
+
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
@@ -908,7 +925,7 @@ function renderRoster() {
 
     let unOrderedTypesToRender = [];
     if (currentCalendarType === '행사장') {
-        const eventsInCat = Object.values(employeesData).filter(e => {
+        const eventsInCat = Object.values(displayEmployeesData).filter(e => {
             const cat = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
             return cat === '행사장';
         });
@@ -930,7 +947,7 @@ function renderRoster() {
         });
     } else if (currentCalendarType === '사은행사') {
         const defaultTypes = ['자사', '타사', '전관', '부문(패션)', '부문(라이프스타일)', '사은품'];
-        const eventsInCat = Object.values(employeesData).filter(e => {
+        const eventsInCat = Object.values(displayEmployeesData).filter(e => {
             const cat = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
             return cat === '사은행사';
         });
@@ -949,7 +966,7 @@ function renderRoster() {
             });
         });
     } else if (currentCalendarType === '이벤트') {
-        const eventsInCat = Object.values(employeesData).filter(e => {
+        const eventsInCat = Object.values(displayEmployeesData).filter(e => {
             const cat = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
             return cat === '이벤트';
         });
@@ -1091,7 +1108,7 @@ function renderRoster() {
             const firstDayOfMonth = new Date(year, month, 1);
             const lastDayOfMonth = new Date(year, month + 1, 0);
 
-            const eventsForType = Object.entries(employeesData)
+            const eventsForType = Object.entries(displayEmployeesData)
                 .filter(([id, e]) => {
                     const evtCategory = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
                     if (evtCategory !== currentCalendarType) return false;
