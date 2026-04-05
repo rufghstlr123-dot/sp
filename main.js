@@ -20,29 +20,12 @@ let allMonthsEmployeesData = {};
 
 function saveLocalState(key, data) {
     try {
-        // Backup to LocalStorage first for UI responsiveness
-        localStorage.setItem(key, JSON.stringify(data));
-        // Save to Firebase (Remote) - Use set for full replace keys like Excluded Brands
+        // Save to Firebase (Remote)
         db.ref(key).set(data);
+        // Backup to LocalStorage
+        localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
         console.error("Firebase Sync Error:", e);
-    }
-}
-
-/**
- * Granular update to specific child path to avoid race conditions.
- * @param {string} rootKey e.g. LS_KEYS.EMPLOYEES
- * @param {string} childKey e.g. eventId
- * @param {object} fullData The whole local object to sync with localStorage
- */
-function updateRemoteChild(rootKey, childKey, fullData) {
-    try {
-        // 1. Update localStorage
-        localStorage.setItem(rootKey, JSON.stringify(fullData));
-        // 2. Atomic update to Firebase
-        db.ref(rootKey).child(childKey).update(fullData[childKey]);
-    } catch (e) {
-        console.error("Firebase Atomic Update Error:", e);
     }
 }
 
@@ -222,75 +205,54 @@ function init() {
         db.ref(key).on('value', (snapshot) => {
             const data = snapshot.val();
 
+            // Backup to localStorage so that getExcludedBrands etc. read the latest data
+            if (data !== null) {
+                localStorage.setItem(key, JSON.stringify(data));
+            } else if (Object.keys(localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : {}).length > 0) {
+                console.warn(`Ignoring empty Firebase update for ${key} to preserve local data.`);
+                return;
+            }
+
             const fallbackData = data || {};
-            localStorage.setItem(key, JSON.stringify(fallbackData));
 
             // Map Firebase data to local state variables
             if (key === LS_KEYS.SCHEDULE) scheduleData = fallbackData;
             if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = fallbackData;
             if (key === LS_KEYS.CHECKED_STATUS) checkedData = fallbackData;
             if (key === LS_KEYS.EMPLOYEES) {
-                employeesData = fallbackData;
-                allMonthsEmployeesData = employeesData;
+                let isNested = false;
+                if (fallbackData) {
+                    for (let fKey in fallbackData) {
+                        if (fKey.match(/^\d{4}-\d{1,2}$/)) {
+                            isNested = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (isNested) {
+                    let flattened = {};
+                    for (let mKey in fallbackData) {
+                        if (typeof fallbackData[mKey] === 'object') {
+                            Object.assign(flattened, fallbackData[mKey]);
+                        }
+                    }
+                    employeesData = flattened;
+                    db.ref(LS_KEYS.EMPLOYEES).set(flattened);
+                } else {
+                    employeesData = fallbackData;
+                }
             }
 
-            // Excluded Brands Real-time Refresh
             if (key === LS_KEYS.EXCLUDED_BRANDS) {
-                if (excludedBrandsModal && !excludedBrandsModal.classList.contains('hidden')) {
+                const excludedModal = document.getElementById('excluded-brands-modal');
+                if (excludedModal && !excludedModal.classList.contains('hidden')) {
                     renderExcludedBrands();
                 }
             }
 
-            // Interest Free Real-time Refresh (Global key fallback)
-            if (key === LS_KEYS.INTEREST_FREE) {
-                if (interestFreeModal && !interestFreeModal.classList.contains('hidden')) {
-                    renderInterestFree();
-                }
-            }
-
-            // Update Sync Status
-            const syncTime = new Date().toLocaleTimeString();
-            const statusEl = document.getElementById('sync-status-text');
-            const indicatorEl = document.getElementById('sync-indicator');
-            if (statusEl) {
-                statusEl.textContent = `동기화 완료 (${syncTime})`;
-                statusEl.style.color = '#10b981';
-            }
-            if (indicatorEl) indicatorEl.style.background = '#10b981';
-
-            // Refresh Roster
             if (typeof renderRoster === 'function') {
                 renderRoster();
-            }
-
-            // --- Real-time update for OPEN Modal/Sidebar ---
-            // 1. Update Event Detail Modal if open
-            if (eventModal && !eventModal.classList.contains('hidden')) {
-                // We find which event is currently being displayed
-                // Currently showEventModal doesn't store displayEventId, but we can infer it or update it.
-                // For now, let's just re-render the modal if it's open.
-                // We'll need to store the current modal ID. 
-                if (window._currentModalId && employeesData[window._currentModalId]) {
-                    showEventModal(window._currentModalId);
-                }
-            }
-
-            // 2. Update Sidebar if editing
-            if (editingEventId && employeesData[editingEventId]) {
-                const e = employeesData[editingEventId];
-                // If editing event was renamed remotely, update the sidebar title
-                if (empNameInput && empNameInput.value !== (e.name || "")) {
-                    // Decide whether to overwrite local typing - usually not if user is typing
-                    // But if it's the title and they are not focused, we can update.
-                    if (document.activeElement !== empNameInput) {
-                        empNameInput.value = e.name || "";
-                    }
-                }
-            }
-
-            // 3. Update Search Results if open
-            if (searchModal && !searchModal.classList.contains('hidden') && searchInput && searchInput.value.trim()) {
-                performSearch(searchInput.value.trim());
             }
         });
     });
@@ -394,15 +356,24 @@ function getMonthKey() {
 }
 
 function loadAllLocalData() {
-    // Only use the unified global key to prevent deviation
     scheduleData = loadLocalState(LS_KEYS.SCHEDULE, {});
     customHolidaysData = loadLocalState(LS_KEYS.CUSTOM_HOLIDAYS, {});
     checkedData = loadLocalState(LS_KEYS.CHECKED_STATUS, {});
 
-    // Force load only from the master key to avoid ghost data from old formats
-    let loadedEmployees = loadLocalState(LS_KEYS.EMPLOYEES, {});
-    
-    employeesData = loadedEmployees;
+    // Check current employees key
+    let loadedEmployees = loadLocalState(LS_KEYS.EMPLOYEES, null);
+
+    // Fallback to old key if current one is empty
+    if (!loadedEmployees || Object.keys(loadedEmployees).length === 0) {
+        console.log("Checking fallback for old employees key...");
+        const oldEmployeesData = loadLocalState('sd_employeesData_all', null) || loadLocalState('sd_employeesData', null);
+        if (oldEmployeesData) {
+            console.log("Found data in fallback key!");
+            loadedEmployees = oldEmployeesData;
+        }
+    }
+
+    employeesData = loadedEmployees || {};
     allMonthsEmployeesData = employeesData;
 
     renderRoster();
@@ -414,10 +385,6 @@ function loadEmployeesForCurrentMonth() {
 
 function saveCurrentMonthEmployees() {
     saveLocalState(LS_KEYS.EMPLOYEES, employeesData);
-}
-
-function saveSpecificEmployee(empId) {
-    updateRemoteChild(LS_KEYS.EMPLOYEES, empId, employeesData);
 }
 
 
@@ -445,7 +412,7 @@ function duplicateEvent() {
         sortOrder: Date.now()
     };
 
-    saveSpecificEmployee(newId);
+    saveCurrentMonthEmployees();
     renderRoster();
     cancelEditEvent();
     alert(`상담/행사가 새로운 기간(${newStart} ~ ${newEnd})으로 복사되었습니다.`);
@@ -455,7 +422,7 @@ function saveEmployee(eventType, name, details, startDate, endDate, budget, bran
     if (!hasPermission('add_employee')) return;
     const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
     employeesData[newId] = { category: currentCalendarType, type: eventType || currentCalendarType, name, details, startDate, endDate, budget, brand, memo, sortOrder: Date.now() };
-    saveSpecificEmployee(newId);
+    saveCurrentMonthEmployees();
     renderRoster();
 }
 
@@ -463,9 +430,7 @@ function deleteEmployee(empId) {
     if (!hasPermission('delete_employee')) return;
     if (confirm("정말 이 행사를 삭제하시겠습니까?")) {
         delete employeesData[empId];
-        // Delete from Firebase
-        db.ref(LS_KEYS.EMPLOYEES).child(empId).remove();
-        localStorage.setItem(LS_KEYS.EMPLOYEES, JSON.stringify(employeesData));
+        saveCurrentMonthEmployees();
 
         // Remove shifts for this employee
         Object.keys(scheduleData).forEach(key => {
@@ -480,20 +445,15 @@ function deleteEmployee(empId) {
 }
 
 window.showEventModal = function (empId) {
-    window._currentModalId = empId;
     const e = employeesData[empId];
     if (!e) return;
-
-    if (modalName) {
-        modalName.textContent = e.category === '행사장' ? (e.brand || '브랜드 정보 없음') : (e.name || '행사 정보');
-    }
 
     modalPeriod.textContent = `${e.startDate} ~ ${e.endDate}`;
 
     if (e.category === '행사장') {
         if (modalName) {
             modalName.style.display = 'block';
-            // Title already set above with ID
+            modalName.textContent = e.brand || '브랜드 정보 없음';
         }
         if (modalType) modalType.style.display = 'none';
         if (modalVenueFloorGroup) modalVenueFloorGroup.style.display = 'block';
@@ -525,7 +485,7 @@ window.showEventModal = function (empId) {
     } else {
         if (modalName) {
             modalName.style.display = 'block';
-            // Title already set above with ID
+            modalName.textContent = e.name || '행사 정보';
         }
         if (modalType) {
             modalType.style.display = 'block';
@@ -588,13 +548,6 @@ window.showEventModal = function (empId) {
         modalCancelEndBtn.onclick = () => {
             cancelEndEvent(empId);
         };
-
-        // Debug ID for tracking inconsistencies
-        const idDisplay = document.getElementById('modal-event-id');
-        if (idDisplay) {
-            idDisplay.textContent = `ID: ${empId}`;
-            idDisplay.style.display = 'block';
-        }
     } else {
         const modalEditGroup = document.getElementById('modal-edit-btn-group');
         if (modalEditGroup) modalEditGroup.style.display = 'none';
@@ -605,7 +558,6 @@ window.showEventModal = function (empId) {
 
 function closeModal() {
     eventModal.classList.add('hidden');
-    window._currentModalId = null;
 }
 
 function endEvent(empId) {
@@ -617,7 +569,7 @@ function endEvent(empId) {
             _prevBudget: employeesData[empId].budget || "",
             budget: ""
         };
-        saveSpecificEmployee(empId);
+        saveCurrentMonthEmployees();
         renderRoster();
         closeModal();
     }
@@ -631,7 +583,7 @@ function cancelEndEvent(empId) {
             isEnded: false,
             budget: employeesData[empId]._prevBudget || employeesData[empId].budget || ""
         };
-        saveSpecificEmployee(empId);
+        saveCurrentMonthEmployees();
         renderRoster();
         closeModal();
     }
@@ -748,12 +700,7 @@ function applyShiftChanges(updates, pushToUndo = true) {
     }
 
     if (changed) {
-        // Schedule is slightly more complex, but we can't easily do granular update for multiple cells at once efficiently
-        // while maintaining the current structure, but at least we can use .update() on the root key
-        // to merge rather than replace if other parts of the DB existed.
-        // Actually, let's just use update on the root to be safer.
-        db.ref(LS_KEYS.SCHEDULE).update(updates);
-        localStorage.setItem(LS_KEYS.SCHEDULE, JSON.stringify(scheduleData));
+        saveLocalState(LS_KEYS.SCHEDULE, scheduleData);
         renderRoster();
     }
 }
@@ -877,33 +824,6 @@ function applyShiftToTarget(key, shift) {
 
 // --- Display Logic ---
 function renderRoster() {
-    if (!rosterGrid) return;
-    
-    // De-duplicate: If ANY instance is marked as Ended, prioritize that status.
-    const uniqueMap = new Map();
-    Object.entries(employeesData).forEach(([id, e]) => {
-        if (!e) return;
-        const key = `${e.name || ''}_${e.category || ''}_${e.startDate || ''}_${e.endDate || ''}`.trim();
-        const existing = uniqueMap.get(key);
-
-        if (!existing) {
-            uniqueMap.set(key, { id, e });
-        } else {
-            // Prioritize Ended status above all else
-            if (e.isEnded && !existing.e.isEnded) {
-                uniqueMap.set(key, { id, e });
-            } 
-            // If both same status, prioritize newer update
-            else if (e.isEnded === existing.e.isEnded) {
-                if ((e.sortOrder || 0) > (existing.e.sortOrder || 0)) {
-                    uniqueMap.set(key, { id, e });
-                }
-            }
-        }
-    });
-    const displayEmployeesData = {};
-    uniqueMap.forEach(val => displayEmployeesData[val.id] = val.e);
-
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
@@ -925,7 +845,7 @@ function renderRoster() {
 
     let unOrderedTypesToRender = [];
     if (currentCalendarType === '행사장') {
-        const eventsInCat = Object.values(displayEmployeesData).filter(e => {
+        const eventsInCat = Object.values(employeesData).filter(e => {
             const cat = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
             return cat === '행사장';
         });
@@ -947,7 +867,7 @@ function renderRoster() {
         });
     } else if (currentCalendarType === '사은행사') {
         const defaultTypes = ['자사', '타사', '전관', '부문(패션)', '부문(라이프스타일)', '사은품'];
-        const eventsInCat = Object.values(displayEmployeesData).filter(e => {
+        const eventsInCat = Object.values(employeesData).filter(e => {
             const cat = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
             return cat === '사은행사';
         });
@@ -966,7 +886,7 @@ function renderRoster() {
             });
         });
     } else if (currentCalendarType === '이벤트') {
-        const eventsInCat = Object.values(displayEmployeesData).filter(e => {
+        const eventsInCat = Object.values(employeesData).filter(e => {
             const cat = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
             return cat === '이벤트';
         });
@@ -1108,7 +1028,7 @@ function renderRoster() {
             const firstDayOfMonth = new Date(year, month, 1);
             const lastDayOfMonth = new Date(year, month + 1, 0);
 
-            const eventsForType = Object.entries(displayEmployeesData)
+            const eventsForType = Object.entries(employeesData)
                 .filter(([id, e]) => {
                     const evtCategory = e.category || (['사은행사', '이벤트', '행사장'].includes(e.type) ? e.type : '사은행사');
                     if (evtCategory !== currentCalendarType) return false;
@@ -1337,7 +1257,7 @@ function renderRoster() {
                                 <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                                     <strong style="font-weight:700; line-height: 1.1;">${gridDisplayName}</strong>
                                     ${(e.category !== '행사장' && e.budget) ? `<span style="font-size: 0.72rem; font-weight: 700; color: #ef4444; opacity: 1;">[${e.budget}만]</span>` : ''}
-                                    ${e.isEnded ? `<span style="font-size: 0.68rem; font-weight: 400; color: #fff; background: #dc2626; padding: 3px 8px; border-radius: 4px; line-height: 1; opacity: 0.9; margin-left: 2px;">행사 종료</span>` : ''}
+                                    ${e.isEnded ? `<span style="font-size: 0.68rem; font-weight: 400; color: #fff; background: #dc2626; padding: 1px 4px; border-radius: 3px; line-height: 1; opacity: 0.9;">행사 종료</span>` : ''}
                                 </div>
                                 ${gridDisplayDetail ? `<span style="font-size: 0.72rem; font-weight: 700; opacity: 1; line-height: 1.1; padding-left: 4px;">${gridDisplayDetail}</span>` : ''}
                             </div>`;
@@ -1695,7 +1615,7 @@ function setupEventListeners() {
 
             const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
             employeesData[newId] = { category: currentCalendarType, type: type || currentCalendarType, floor, venueDetail, name, details, startDate: start, endDate: end, budget, brand, team, memo, sortOrder: Date.now() };
-            saveSpecificEmployee(newId);
+            saveCurrentMonthEmployees();
             renderRoster();
 
             if (currentCalendarType === '행사장') {
@@ -1827,7 +1747,7 @@ function setupEventListeners() {
                 startDate: start,
                 endDate: end
             };
-            saveSpecificEmployee(editingEventId);
+            saveCurrentMonthEmployees();
             renderRoster();
             cancelEditEvent();
         };
