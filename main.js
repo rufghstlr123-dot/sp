@@ -244,7 +244,10 @@ function init() {
         }, (error) => {
             console.error(`Firebase Sync Error for ${key}:`, error);
             const statusDot = document.getElementById('sync-status');
-            if (statusDot) statusDot.style.background = "#f59e0b"; // Orange (Warning/Auth error)
+            if (statusDot) {
+                statusDot.style.background = "#f59e0b"; // Orange (Warning/Auth error)
+                statusDot.title = `동기화 오류: ${error.message}`;
+            }
         });
     });
 
