@@ -1257,7 +1257,7 @@ function renderRoster() {
                                 <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                                     <strong style="font-weight:700; line-height: 1.1;">${gridDisplayName}</strong>
                                     ${(e.category !== '행사장' && e.budget) ? `<span style="font-size: 0.72rem; font-weight: 700; color: #ef4444; opacity: 1;">[${e.budget}만]</span>` : ''}
-                                    ${e.isEnded ? `<span style="font-size: 0.68rem; font-weight: 400; color: #fff; background: #dc2626; padding: 1px 4px; border-radius: 3px; line-height: 1; opacity: 0.9;">행사 종료</span>` : ''}
+                                    ${e.isEnded ? `<span style="font-size: 0.68rem; font-weight: 400; color: #fff; background: #dc2626; padding: 3px 8px; border-radius: 4px; line-height: 1; opacity: 0.9; margin-left: 2px;">행사 종료</span>` : ''}
                                 </div>
                                 ${gridDisplayDetail ? `<span style="font-size: 0.72rem; font-weight: 700; opacity: 1; line-height: 1.1; padding-left: 4px;">${gridDisplayDetail}</span>` : ''}
                             </div>`;
