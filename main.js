@@ -248,6 +248,16 @@ function init() {
                 }
             }
 
+            // Update Sync Status
+            const syncTime = new Date().toLocaleTimeString();
+            const statusEl = document.getElementById('sync-status-text');
+            const indicatorEl = document.getElementById('sync-indicator');
+            if (statusEl) {
+                statusEl.textContent = `동기화 완료 (${syncTime})`;
+                statusEl.style.color = '#10b981';
+            }
+            if (indicatorEl) indicatorEl.style.background = '#10b981';
+
             // Refresh Roster
             if (typeof renderRoster === 'function') {
                 renderRoster();
@@ -483,12 +493,17 @@ window.showEventModal = function (empId) {
     const e = employeesData[empId];
     if (!e) return;
 
+    if (modalName) {
+        const baseTitle = e.category === '행사장' ? (e.brand || '브랜드 정보 없음') : (e.name || '행사 정보');
+        modalName.textContent = `${baseTitle} (ID: ${empId})`;
+    }
+
     modalPeriod.textContent = `${e.startDate} ~ ${e.endDate}`;
 
     if (e.category === '행사장') {
         if (modalName) {
             modalName.style.display = 'block';
-            modalName.textContent = e.brand || '브랜드 정보 없음';
+            // Title already set above with ID
         }
         if (modalType) modalType.style.display = 'none';
         if (modalVenueFloorGroup) modalVenueFloorGroup.style.display = 'block';
@@ -520,7 +535,7 @@ window.showEventModal = function (empId) {
     } else {
         if (modalName) {
             modalName.style.display = 'block';
-            modalName.textContent = e.name || '행사 정보';
+            // Title already set above with ID
         }
         if (modalType) {
             modalType.style.display = 'block';
@@ -583,6 +598,13 @@ window.showEventModal = function (empId) {
         modalCancelEndBtn.onclick = () => {
             cancelEndEvent(empId);
         };
+
+        // Debug ID for tracking inconsistencies
+        const idDisplay = document.getElementById('modal-event-id');
+        if (idDisplay) {
+            idDisplay.textContent = `ID: ${empId}`;
+            idDisplay.style.display = 'block';
+        }
     } else {
         const modalEditGroup = document.getElementById('modal-edit-btn-group');
         if (modalEditGroup) modalEditGroup.style.display = 'none';
