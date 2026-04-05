@@ -210,6 +210,7 @@ function init() {
 
     Object.keys(LS_KEYS).forEach(k => {
         const key = LS_KEYS[k];
+
         db.ref(key).on('value', (snapshot) => {
             const data = snapshot.val();
 
@@ -252,16 +253,27 @@ function init() {
                     }
                 }
                 
+                if (key === LS_KEYS.INTEREST_FREE) {
+                    const modal = document.getElementById('interest-free-modal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        renderInterestFree();
+                    }
+                }
+                
                 if (typeof renderRoster === 'function') {
                     renderRoster();
                 }
-            } else {
-                // If data is null but we have local backup, consider if we should push local -> remote
-                // For now, just keep the orange warning
+
                 const statusDot = document.getElementById('sync-status');
                 if (statusDot) {
-                    statusDot.style.background = "#f59e0b"; 
-                    statusDot.title = `데이터가 비어있음: ${key}`;
+                    statusDot.style.background = "#22c55e"; 
+                    statusDot.title = "Firebase 연결됨";
+                }
+            } else {
+                const statusDot = document.getElementById('sync-status');
+                if (statusDot) {
+                    statusDot.style.background = "#22c55e"; 
+                    statusDot.title = "Firebase 연결됨";
                 }
             }
         }, (error) => {
@@ -274,8 +286,7 @@ function init() {
         });
     });
 
-    listenToCurrentMonthInterestFree();
-
+    // Removed listenToCurrentMonthInterestFree as it is now global
     setupEventListeners();
     setupGlobalKeyboard();
 
@@ -344,27 +355,7 @@ function hasPermission(action, targetEmpId = null) {
     return false;
 }
 
-let currentInterestFreeRef = null;
-function listenToCurrentMonthInterestFree() {
-    if (currentInterestFreeRef) {
-        currentInterestFreeRef.off();
-    }
-    const monthKey = `${LS_KEYS.INTEREST_FREE}_${getMonthKey()}`;
-    currentInterestFreeRef = db.ref(monthKey);
-    currentInterestFreeRef.on('value', (snapshot) => {
-        const data = snapshot.val();
-        if (data !== null) {
-            localStorage.setItem(monthKey, JSON.stringify(data));
-        } else {
-            localStorage.removeItem(monthKey);
-        }
-
-        const modal = document.getElementById('interest-free-modal');
-        if (modal && !modal.classList.contains('hidden')) {
-            renderInterestFree();
-        }
-    });
-}
+// listenToCurrentMonthInterestFree removed as Interest Free is now global and synced in the main loop
 
 
 // --- Local Storage Sync ---
@@ -1568,8 +1559,8 @@ function handleExternalPaste(dataMatrix) {
 
 // --- Interaction ---
 function setupEventListeners() {
-    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
-    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
+    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); renderRoster(); };
+    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); renderRoster(); };
 
     if (eventTypeSelect && eventTypeInput) {
         eventTypeSelect.addEventListener('change', () => {
@@ -1943,7 +1934,7 @@ function setupEventListeners() {
         interestFreeSaveBtn.onclick = () => {
             const text = interestFreeInput.value.trim();
             const list = text.split('\n').map(s => s.trim()).filter(s => s !== '');
-            saveLocalState(`${LS_KEYS.INTEREST_FREE}_${getMonthKey()}`, list);
+            saveLocalState(LS_KEYS.INTEREST_FREE, list);
             renderInterestFree();
             setInterestFreeEditMode(false);
         };
@@ -2139,16 +2130,7 @@ function setExcludedBrandEditMode(isEdit) {
 }
 
 function getInterestFree() {
-    const monthKey = `${LS_KEYS.INTEREST_FREE}_${getMonthKey()}`;
-    const rawMonthData = localStorage.getItem(monthKey);
-    if (rawMonthData) {
-        try {
-            return JSON.parse(rawMonthData);
-        } catch (e) {
-            console.error(e);
-        }
-    }
-    return [];
+    return loadLocalState(LS_KEYS.INTEREST_FREE, []);
 }
 
 function renderInterestFree() {
