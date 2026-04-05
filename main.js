@@ -200,60 +200,51 @@ function init() {
     loadAllLocalData(); // Initial load from LocalStorage for immediate UI response
 
     // --- Start Real-time Sync from Firebase ---
+    db.ref(".info/connected").on("value", (snap) => {
+        const statusDot = document.getElementById('sync-status');
+        if (statusDot) {
+            statusDot.style.background = snap.val() === true ? "#22c55e" : "#ef4444";
+            statusDot.title = snap.val() === true ? "Firebase 연결됨" : "Firebase 연결 끊김";
+        }
+    });
+
     Object.keys(LS_KEYS).forEach(k => {
         const key = LS_KEYS[k];
         db.ref(key).on('value', (snapshot) => {
             const data = snapshot.val();
 
-            // Backup to localStorage so that getExcludedBrands etc. read the latest data
+            // Only update local state if data is present
             if (data !== null) {
                 localStorage.setItem(key, JSON.stringify(data));
-            } else if (Object.keys(localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : {}).length > 0) {
-                console.warn(`Ignoring empty Firebase update for ${key} to preserve local data.`);
-                return;
-            }
-
-            const fallbackData = data || {};
-
-            // Map Firebase data to local state variables
-            if (key === LS_KEYS.SCHEDULE) scheduleData = fallbackData;
-            if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = fallbackData;
-            if (key === LS_KEYS.CHECKED_STATUS) checkedData = fallbackData;
-            if (key === LS_KEYS.EMPLOYEES) {
-                let isNested = false;
-                if (fallbackData) {
-                    for (let fKey in fallbackData) {
-                        if (fKey.match(/^\d{4}-\d{1,2}$/)) {
-                            isNested = true;
-                            break;
-                        }
+                
+                // Map Firebase data to local state variables
+                if (key === LS_KEYS.SCHEDULE) scheduleData = data;
+                if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = data;
+                if (key === LS_KEYS.CHECKED_STATUS) checkedData = data;
+                if (key === LS_KEYS.EMPLOYEES) {
+                    employeesData = data;
+                }
+                if (key === LS_KEYS.MEMO) {
+                    // Update memo if it's currently showing
+                    if (memoArea && !document.activeElement.classList.contains('memo-area')) {
+                        memoArea.value = data || "";
                     }
                 }
-
-                if (isNested) {
-                    let flattened = {};
-                    for (let mKey in fallbackData) {
-                        if (typeof fallbackData[mKey] === 'object') {
-                            Object.assign(flattened, fallbackData[mKey]);
-                        }
+                if (key === LS_KEYS.EXCLUDED_BRANDS) {
+                    const excludedModal = document.getElementById('excluded-brands-modal');
+                    if (excludedModal && !excludedModal.classList.contains('hidden')) {
+                        renderExcludedBrands();
                     }
-                    employeesData = flattened;
-                    db.ref(LS_KEYS.EMPLOYEES).set(flattened);
-                } else {
-                    employeesData = fallbackData;
+                }
+                
+                if (typeof renderRoster === 'function') {
+                    renderRoster();
                 }
             }
-
-            if (key === LS_KEYS.EXCLUDED_BRANDS) {
-                const excludedModal = document.getElementById('excluded-brands-modal');
-                if (excludedModal && !excludedModal.classList.contains('hidden')) {
-                    renderExcludedBrands();
-                }
-            }
-
-            if (typeof renderRoster === 'function') {
-                renderRoster();
-            }
+        }, (error) => {
+            console.error(`Firebase Sync Error for ${key}:`, error);
+            const statusDot = document.getElementById('sync-status');
+            if (statusDot) statusDot.style.background = "#f59e0b"; // Orange (Warning/Auth error)
         });
     });
 
