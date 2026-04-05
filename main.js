@@ -222,14 +222,8 @@ function init() {
         db.ref(key).on('value', (snapshot) => {
             const data = snapshot.val();
 
-            if (data !== null) {
-                localStorage.setItem(key, JSON.stringify(data));
-            } else if (Object.keys(localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : {}).length > 0) {
-                // If firebase is null but local has data, keep local (safety for initial sync)
-                return;
-            }
-
             const fallbackData = data || {};
+            localStorage.setItem(key, JSON.stringify(fallbackData));
 
             // Map Firebase data to local state variables
             if (key === LS_KEYS.SCHEDULE) scheduleData = fallbackData;
