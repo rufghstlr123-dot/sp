@@ -237,6 +237,14 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   transform: translateY(-1px);
 }
 
+.primary-btn.danger {
+  background: #ef4444;
+}
+
+.primary-btn.danger:hover {
+  background: #dc2626;
+}
+
 .secondary-btn {
   background: var(--bg-main);
   color: var(--pr-color);

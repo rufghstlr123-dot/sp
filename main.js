@@ -110,6 +110,7 @@ const eventModal = document.getElementById('event-modal');
 const modalCloseBtn = document.getElementById('modal-close-btn');
 const modalEditBtn = document.getElementById('modal-edit-btn');
 const modalEndEventBtn = document.getElementById('modal-end-event-btn');
+const modalCancelEndBtn = document.getElementById('modal-cancel-end-btn');
 const modalName = document.getElementById('modal-event-name');
 const modalType = document.getElementById('modal-event-type');
 const modalPeriod = document.getElementById('modal-event-period');
@@ -528,12 +529,24 @@ window.showEventModal = function (empId) {
     if (hasPermission('add_employee')) {
         const modalEditGroup = document.getElementById('modal-edit-btn-group');
         if (modalEditGroup) modalEditGroup.style.display = 'flex';
+
+        if (e.isEnded) {
+            modalEndEventBtn.style.display = 'none';
+            modalCancelEndBtn.style.display = 'block';
+        } else {
+            modalEndEventBtn.style.display = 'block';
+            modalCancelEndBtn.style.display = 'none';
+        }
+
         modalEditBtn.onclick = () => {
             closeModal();
             editEvent(empId);
         };
         modalEndEventBtn.onclick = () => {
             endEvent(empId);
+        };
+        modalCancelEndBtn.onclick = () => {
+            cancelEndEvent(empId);
         };
     } else {
         const modalEditGroup = document.getElementById('modal-edit-btn-group');
@@ -554,6 +567,19 @@ function endEvent(empId) {
             ...employeesData[empId],
             isEnded: true,
             budget: ""
+        };
+        saveCurrentMonthEmployees();
+        renderRoster();
+        closeModal();
+    }
+}
+
+function cancelEndEvent(empId) {
+    if (!hasPermission('edit_employee')) return;
+    if (confirm("행사 종료를 취소하고 다시 예산 및 행사 정보를 활성화하시겠습니까?")) {
+        employeesData[empId] = {
+            ...employeesData[empId],
+            isEnded: false
         };
         saveCurrentMonthEmployees();
         renderRoster();
