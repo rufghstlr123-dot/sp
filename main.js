@@ -210,6 +210,8 @@ function init() {
 
     Object.keys(LS_KEYS).forEach(k => {
         const key = LS_KEYS[k];
+        // Skip INTEREST_FREE in global loop as it is month-specific and handled separately
+        if (key === LS_KEYS.INTEREST_FREE) return;
 
         db.ref(key).on('value', (snapshot) => {
             const data = snapshot.val();
@@ -253,13 +255,6 @@ function init() {
                     }
                 }
                 
-                if (key === LS_KEYS.INTEREST_FREE) {
-                    const modal = document.getElementById('interest-free-modal');
-                    if (modal && !modal.classList.contains('hidden')) {
-                        renderInterestFree();
-                    }
-                }
-                
                 if (typeof renderRoster === 'function') {
                     renderRoster();
                 }
@@ -286,7 +281,8 @@ function init() {
         });
     });
 
-    // Removed listenToCurrentMonthInterestFree as it is now global
+    listenToCurrentMonthInterestFree();
+
     setupEventListeners();
     setupGlobalKeyboard();
 
@@ -355,7 +351,27 @@ function hasPermission(action, targetEmpId = null) {
     return false;
 }
 
-// listenToCurrentMonthInterestFree removed as Interest Free is now global and synced in the main loop
+let currentInterestFreeRef = null;
+function listenToCurrentMonthInterestFree() {
+    if (currentInterestFreeRef) {
+        currentInterestFreeRef.off();
+    }
+    const monthKey = `${LS_KEYS.INTEREST_FREE}_${getMonthKey()}`;
+    currentInterestFreeRef = db.ref(monthKey);
+    currentInterestFreeRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data !== null) {
+            localStorage.setItem(monthKey, JSON.stringify(data));
+        } else {
+            localStorage.removeItem(monthKey);
+        }
+
+        const modal = document.getElementById('interest-free-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            renderInterestFree();
+        }
+    });
+}
 
 
 // --- Local Storage Sync ---
@@ -1559,8 +1575,8 @@ function handleExternalPaste(dataMatrix) {
 
 // --- Interaction ---
 function setupEventListeners() {
-    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); renderRoster(); };
-    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); renderRoster(); };
+    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
+    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
 
     if (eventTypeSelect && eventTypeInput) {
         eventTypeSelect.addEventListener('change', () => {
@@ -1934,7 +1950,7 @@ function setupEventListeners() {
         interestFreeSaveBtn.onclick = () => {
             const text = interestFreeInput.value.trim();
             const list = text.split('\n').map(s => s.trim()).filter(s => s !== '');
-            saveLocalState(LS_KEYS.INTEREST_FREE, list);
+            saveLocalState(`${LS_KEYS.INTEREST_FREE}_${getMonthKey()}`, list);
             renderInterestFree();
             setInterestFreeEditMode(false);
         };
@@ -2130,7 +2146,16 @@ function setExcludedBrandEditMode(isEdit) {
 }
 
 function getInterestFree() {
-    return loadLocalState(LS_KEYS.INTEREST_FREE, []);
+    const monthKey = `${LS_KEYS.INTEREST_FREE}_${getMonthKey()}`;
+    const rawMonthData = localStorage.getItem(monthKey);
+    if (rawMonthData) {
+        try {
+            return JSON.parse(rawMonthData);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    return [];
 }
 
 function renderInterestFree() {
