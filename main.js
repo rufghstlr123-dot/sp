@@ -217,28 +217,51 @@ function init() {
             if (data !== null) {
                 localStorage.setItem(key, JSON.stringify(data));
                 
-                // Map Firebase data to local state variables
-                if (key === LS_KEYS.SCHEDULE) scheduleData = data;
-                if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = data;
-                if (key === LS_KEYS.CHECKED_STATUS) checkedData = data;
+                let processedData = data;
+                
+                // Special handling for legacy nested employees data
                 if (key === LS_KEYS.EMPLOYEES) {
-                    employeesData = data;
-                }
-                if (key === LS_KEYS.MEMO) {
-                    // Update memo if it's currently showing
-                    if (memoArea && !document.activeElement.classList.contains('memo-area')) {
-                        memoArea.value = data || "";
+                    let isNested = false;
+                    for (let fKey in data) {
+                        if (fKey.match(/^\d{4}-\d{1,2}$/)) {
+                            isNested = true;
+                            break;
+                        }
+                    }
+                    if (isNested) {
+                        console.log("Legacy nested data detected. Flattening...");
+                        processedData = {};
+                        for (let mKey in data) {
+                            if (typeof data[mKey] === 'object') {
+                                Object.assign(processedData, data[mKey]);
+                            }
+                        }
+                        // Migrate legacy data to flat structure in Firebase
+                        db.ref(LS_KEYS.EMPLOYEES).set(processedData);
                     }
                 }
-                if (key === LS_KEYS.EXCLUDED_BRANDS) {
-                    const excludedModal = document.getElementById('excluded-brands-modal');
-                    if (excludedModal && !excludedModal.classList.contains('hidden')) {
-                        renderExcludedBrands();
+
+                // Map Firebase data to local state variables
+                if (key === LS_KEYS.SCHEDULE) scheduleData = processedData;
+                if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = processedData;
+                if (key === LS_KEYS.CHECKED_STATUS) checkedData = processedData;
+                if (key === LS_KEYS.EMPLOYEES) employeesData = processedData;
+                if (key === LS_KEYS.MEMO) {
+                    if (memoArea && !document.activeElement.classList.contains('memo-area')) {
+                        memoArea.value = processedData || "";
                     }
                 }
                 
                 if (typeof renderRoster === 'function') {
                     renderRoster();
+                }
+            } else {
+                // If data is null but we have local backup, consider if we should push local -> remote
+                // For now, just keep the orange warning
+                const statusDot = document.getElementById('sync-status');
+                if (statusDot) {
+                    statusDot.style.background = "#f59e0b"; 
+                    statusDot.title = `데이터가 비어있음: ${key}`;
                 }
             }
         }, (error) => {
