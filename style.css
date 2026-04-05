@@ -245,6 +245,11 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   background: #dc2626;
 }
 
+#modal-edit-btn-group .primary-btn {
+  padding: 0.85rem 1.5rem;
+  font-size: 0.95rem;
+}
+
 .secondary-btn {
   background: var(--bg-main);
   color: var(--pr-color);
