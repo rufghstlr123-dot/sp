@@ -205,11 +205,10 @@ function init() {
         db.ref(key).on('value', (snapshot) => {
             const data = snapshot.val();
 
-            // Backup to localStorage so that getExcludedBrands etc. read the latest data
             if (data !== null) {
                 localStorage.setItem(key, JSON.stringify(data));
             } else if (Object.keys(localStorage.getItem(key) ? JSON.parse(localStorage.getItem(key)) : {}).length > 0) {
-                console.warn(`Ignoring empty Firebase update for ${key} to preserve local data.`);
+                // If firebase is null but local has data, keep local (safety for initial sync)
                 return;
             }
 
@@ -220,39 +219,57 @@ function init() {
             if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = fallbackData;
             if (key === LS_KEYS.CHECKED_STATUS) checkedData = fallbackData;
             if (key === LS_KEYS.EMPLOYEES) {
-                let isNested = false;
-                if (fallbackData) {
-                    for (let fKey in fallbackData) {
-                        if (fKey.match(/^\d{4}-\d{1,2}$/)) {
-                            isNested = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (isNested) {
-                    let flattened = {};
-                    for (let mKey in fallbackData) {
-                        if (typeof fallbackData[mKey] === 'object') {
-                            Object.assign(flattened, fallbackData[mKey]);
-                        }
-                    }
-                    employeesData = flattened;
-                    db.ref(LS_KEYS.EMPLOYEES).set(flattened);
-                } else {
-                    employeesData = fallbackData;
-                }
+                employeesData = fallbackData;
+                allMonthsEmployeesData = employeesData;
             }
 
+            // Excluded Brands Real-time Refresh
             if (key === LS_KEYS.EXCLUDED_BRANDS) {
-                const excludedModal = document.getElementById('excluded-brands-modal');
-                if (excludedModal && !excludedModal.classList.contains('hidden')) {
+                if (excludedBrandsModal && !excludedBrandsModal.classList.contains('hidden')) {
                     renderExcludedBrands();
                 }
             }
 
+            // Interest Free Real-time Refresh (Global key fallback)
+            if (key === LS_KEYS.INTEREST_FREE) {
+                if (interestFreeModal && !interestFreeModal.classList.contains('hidden')) {
+                    renderInterestFree();
+                }
+            }
+
+            // Refresh Roster
             if (typeof renderRoster === 'function') {
                 renderRoster();
+            }
+
+            // --- Real-time update for OPEN Modal/Sidebar ---
+            // 1. Update Event Detail Modal if open
+            if (eventModal && !eventModal.classList.contains('hidden')) {
+                // We find which event is currently being displayed
+                // Currently showEventModal doesn't store displayEventId, but we can infer it or update it.
+                // For now, let's just re-render the modal if it's open.
+                // We'll need to store the current modal ID. 
+                if (window._currentModalId && employeesData[window._currentModalId]) {
+                    showEventModal(window._currentModalId);
+                }
+            }
+
+            // 2. Update Sidebar if editing
+            if (editingEventId && employeesData[editingEventId]) {
+                const e = employeesData[editingEventId];
+                // If editing event was renamed remotely, update the sidebar title
+                if (empNameInput && empNameInput.value !== (e.name || "")) {
+                    // Decide whether to overwrite local typing - usually not if user is typing
+                    // But if it's the title and they are not focused, we can update.
+                    if (document.activeElement !== empNameInput) {
+                        empNameInput.value = e.name || "";
+                    }
+                }
+            }
+
+            // 3. Update Search Results if open
+            if (searchModal && !searchModal.classList.contains('hidden') && searchInput && searchInput.value.trim()) {
+                performSearch(searchInput.value.trim());
             }
         });
     });
@@ -445,6 +462,7 @@ function deleteEmployee(empId) {
 }
 
 window.showEventModal = function (empId) {
+    window._currentModalId = empId;
     const e = employeesData[empId];
     if (!e) return;
 
@@ -558,6 +576,7 @@ window.showEventModal = function (empId) {
 
 function closeModal() {
     eventModal.classList.add('hidden');
+    window._currentModalId = null;
 }
 
 function endEvent(empId) {
