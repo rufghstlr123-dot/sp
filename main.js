@@ -562,10 +562,11 @@ function closeModal() {
 
 function endEvent(empId) {
     if (!hasPermission('edit_employee')) return;
-    if (confirm("정말 이 행사를 종료하시겠습니까? 종료 시 예산 정보가 삭제됩니다.")) {
+    if (confirm("정말 이 행사를 종료하시겠습니까? 종료 시 예산 정보가 보관되며 표기만 제거됩니다.")) {
         employeesData[empId] = {
             ...employeesData[empId],
             isEnded: true,
+            _prevBudget: employeesData[empId].budget || "",
             budget: ""
         };
         saveCurrentMonthEmployees();
@@ -579,7 +580,8 @@ function cancelEndEvent(empId) {
     if (confirm("행사 종료를 취소하고 다시 예산 및 행사 정보를 활성화하시겠습니까?")) {
         employeesData[empId] = {
             ...employeesData[empId],
-            isEnded: false
+            isEnded: false,
+            budget: employeesData[empId]._prevBudget || employeesData[empId].budget || ""
         };
         saveCurrentMonthEmployees();
         renderRoster();
@@ -1255,7 +1257,7 @@ function renderRoster() {
                                 <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                                     <strong style="font-weight:700; line-height: 1.1;">${gridDisplayName}</strong>
                                     ${(e.category !== '행사장' && e.budget) ? `<span style="font-size: 0.72rem; font-weight: 700; color: #ef4444; opacity: 1;">[${e.budget}만]</span>` : ''}
-                                    ${e.isEnded ? `<span style="font-size: 0.7rem; font-weight: 700; color: #fff; background: #64748b; padding: 1px 4px; border-radius: 4px; line-height: 1.1;">행사 종료</span>` : ''}
+                                    ${e.isEnded ? `<span style="font-size: 0.72rem; font-weight: 800; color: #fff; background: #dc2626; padding: 2px 6px; border-radius: 4px; line-height: 1.1; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>행사 종료</span>` : ''}
                                 </div>
                                 ${gridDisplayDetail ? `<span style="font-size: 0.72rem; font-weight: 700; opacity: 1; line-height: 1.1; padding-left: 4px;">${gridDisplayDetail}</span>` : ''}
                             </div>`;
