@@ -684,7 +684,7 @@ window.cancelEditEvent = function () {
         eventTypeInput.value = '';
         eventTypeInput.style.display = 'none';
     } else {
-        eventTypeInput.value = '이벤트';
+        eventTypeInput.value = currentCalendarType;
     }
 
     saveEmpBtn.style.display = 'block';
@@ -926,6 +926,23 @@ function renderRoster() {
                 return start <= lastDayOfMonth && end >= firstDayOfMonth;
             });
         });
+    } else if (currentCalendarType === '미입점 브랜드') {
+        const eventsInCat = Object.values(employeesData).filter(e => {
+            const cat = e.category || (['사은행사', '이벤트', '행사장', '미입점 브랜드'].includes(e.type) ? e.type : '사은행사');
+            return cat === '미입점 브랜드';
+        });
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
+
+        unOrderedTypesToRender = [...new Set(eventsInCat.map(e => e.type))].sort().filter(type => {
+            return eventsInCat.some(e => {
+                if (e.type !== type) return false;
+                if (!e.startDate || !e.endDate) return false;
+                const start = parseLocalDate(e.startDate);
+                const end = parseLocalDate(e.endDate);
+                return start <= lastDayOfMonth && end >= firstDayOfMonth;
+            });
+        });
     }
 
     const savedOrder = getRowOrder(currentCalendarType);
@@ -938,7 +955,7 @@ function renderRoster() {
         return indexA - indexB;
     });
 
-    if (currentCalendarType !== '행사장' && currentCalendarType !== '사은행사' && currentCalendarType !== '이벤트') {
+    if (currentCalendarType !== '행사장' && currentCalendarType !== '사은행사' && currentCalendarType !== '이벤트' && currentCalendarType !== '미입점 브랜드') {
         typesToRender = [currentCalendarType];
     }
 
@@ -1651,7 +1668,7 @@ function setupEventListeners() {
                 eventTypeInput.style.display = 'none';
                 eventTypeInput.value = '';
             } else {
-                eventTypeInput.value = '이벤트';
+                eventTypeInput.value = currentCalendarType;
             }
             empNameInput.value = '';
             eventDetailsInput.value = '';
@@ -1845,6 +1862,32 @@ function setupEventListeners() {
                     if (sidebarMemoSection) sidebarMemoSection.style.display = 'block';
                     if (eventDetailsLabel) eventDetailsLabel.textContent = '장소';
                     if (eventDetailsInput) eventDetailsInput.placeholder = '행사 장소를 입력하세요';
+                } else if (currentCalendarType === '미입점 브랜드') {
+                    eventTypeSelect.style.display = 'none';
+                    eventTypeInput.style.display = '';
+                    eventTypeInput.value = '미입점 브랜드';
+                    eventTypeInput.readOnly = true;
+                    eventTypeInput.style.backgroundColor = 'var(--bg-main)';
+                    eventTypeInput.style.color = 'black';
+
+                    if (sidebarVenueFloorGroup) sidebarVenueFloorGroup.style.display = 'none';
+                    if (sidebarVenueNameGroup) sidebarVenueNameGroup.style.display = 'none';
+                    if (sidebarVenueDetailGroup) sidebarVenueDetailGroup.style.display = 'none';
+                    if (sidebarTeamGroup) sidebarTeamGroup.style.display = 'none';
+
+                    if (sidebarEventTypeLabel) {
+                        sidebarEventTypeLabel.style.display = 'block';
+                        sidebarEventTypeLabel.textContent = '행사 종류';
+                    }
+                    if (sidebarEventNameGroup) sidebarEventNameGroup.style.display = 'block';
+                    if (sidebarEventDetailsGroup) sidebarEventDetailsGroup.style.display = 'block';
+                    if (sidebarBrandGroup) sidebarBrandGroup.style.display = 'none';
+                    if (sidebarBrandLabel) sidebarBrandLabel.textContent = '브랜드명';
+                    if (sidebarBudgetGroup) sidebarBudgetGroup.style.display = 'none';
+
+                    if (sidebarMemoSection) sidebarMemoSection.style.display = 'block';
+                    if (eventDetailsLabel) eventDetailsLabel.textContent = '장소';
+                    if (eventDetailsInput) eventDetailsInput.placeholder = '장소를 입력하세요';
                 } else { // 사은행사
                     eventTypeSelect.style.display = '';
                     if (eventTypeSelect.value === '직접입력') {
