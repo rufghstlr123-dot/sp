@@ -1234,6 +1234,7 @@ function renderRoster() {
                 memoCell.style.wordBreak = 'break-all';
                 memoCell.style.display = 'flex';
                 memoCell.style.alignItems = 'center';
+                memoCell.style.justifyContent = 'flex-start'; // Align content to the left
                 memoCell.style.cursor = 'pointer';
 
                 // Get memo from the first event for this brand
