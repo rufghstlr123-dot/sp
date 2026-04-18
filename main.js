@@ -862,13 +862,17 @@ function renderRoster() {
     const month = currentDate.getMonth();
 
     if (currentCalendarType === '미입점 브랜드') {
-        currentMonthDisplay.textContent = '미입점 브랜드 목록';
+        currentMonthDisplay.textContent = '미입점 브랜드';
         if (prevBtn) prevBtn.style.display = 'none';
         if (nextBtn) nextBtn.style.display = 'none';
+        if (excludedBrandsBtn) excludedBrandsBtn.style.display = 'none';
+        if (interestFreeBtn) interestFreeBtn.style.display = 'none';
     } else {
         currentMonthDisplay.textContent = `${year}년 ${month + 1}월`;
         if (prevBtn) prevBtn.style.display = 'block';
         if (nextBtn) nextBtn.style.display = 'block';
+        if (excludedBrandsBtn) excludedBrandsBtn.style.display = 'block';
+        if (interestFreeBtn) interestFreeBtn.style.display = 'block';
     }
     rosterGrid.innerHTML = '';
     // Remove any existing cal-type- classes
