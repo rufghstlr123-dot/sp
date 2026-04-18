@@ -861,7 +861,15 @@ function renderRoster() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    currentMonthDisplay.textContent = `${year}년 ${month + 1}월`;
+    if (currentCalendarType === '미입점 브랜드') {
+        currentMonthDisplay.textContent = '미입점 브랜드 목록';
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+        currentMonthDisplay.textContent = `${year}년 ${month + 1}월`;
+        if (prevBtn) prevBtn.style.display = 'block';
+        if (nextBtn) nextBtn.style.display = 'block';
+    }
     rosterGrid.innerHTML = '';
     // Remove any existing cal-type- classes
     Array.from(rosterGrid.classList).forEach(cls => {
@@ -2224,17 +2232,21 @@ function performSearch(query) {
 }
 
 function navigateToEvent(monthKey, eventId) {
-    const [y, m] = monthKey.split('-').map(Number);
-    currentDate = new Date(y, m - 1, 1);
-
-    // Load context for that month
-    loadEmployeesForCurrentMonth();
-
-    // Find category
     const event = employeesData[eventId];
-    if (event) {
-        currentCalendarType = event.category || '사은행사';
-        // Update tabs UI
+    const category = event ? (event.category || (['사은행사', '이벤트', '행사장', '미입점 브랜드'].includes(event.type) ? event.type : '사은행사')) : '사은행사';
+
+    if (category === '미입점 브랜드') {
+        currentCalendarType = '미입점 브랜드';
+        calTabs.forEach(t => {
+            if (t.dataset.type === currentCalendarType) t.classList.add('active');
+            else t.classList.remove('active');
+        });
+        // Brands are date-independent
+    } else {
+        const [y, m] = monthKey.split('-').map(Number);
+        currentDate = new Date(y, m - 1, 1);
+        loadEmployeesForCurrentMonth();
+        currentCalendarType = category;
         calTabs.forEach(t => {
             if (t.dataset.type === currentCalendarType) t.classList.add('active');
             else t.classList.remove('active');
