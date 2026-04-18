@@ -946,14 +946,20 @@ function renderRoster() {
     }
 
     const savedOrder = getRowOrder(currentCalendarType);
-    let typesToRender = [...unOrderedTypesToRender].sort((a, b) => {
-        const indexA = savedOrder.indexOf(a);
-        const indexB = savedOrder.indexOf(b);
-        if (indexA === -1 && indexB === -1) return 0;
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        return indexA - indexB;
-    });
+    let typesToRender = [...unOrderedTypesToRender];
+    if (currentCalendarType === '미입점 브랜드') {
+        // Sort alphabetically by brand name for this category
+        typesToRender.sort((a, b) => a.localeCompare(b, 'ko'));
+    } else {
+        typesToRender.sort((a, b) => {
+            const indexA = savedOrder.indexOf(a);
+            const indexB = savedOrder.indexOf(b);
+            if (indexA === -1 && indexB === -1) return 0;
+            if (indexA === -1) return 1;
+            if (indexB === -1) return -1;
+            return indexA - indexB;
+        });
+    }
 
     if (currentCalendarType !== '행사장' && currentCalendarType !== '사은행사' && currentCalendarType !== '이벤트' && currentCalendarType !== '미입점 브랜드') {
         typesToRender = [currentCalendarType];
@@ -1654,8 +1660,21 @@ function setupEventListeners() {
                 return;
             }
 
-            const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
-            employeesData[newId] = { category: currentCalendarType, type: type || currentCalendarType, floor, venueDetail, name, details, startDate: start, endDate: end, budget, brand, team, memo, sortOrder: Date.now() };
+            if (currentCalendarType === '미입점 브랜드') {
+                if (!start || !end) {
+                    // Default to a long range for brands without specific periods
+                    const s = '2000-01-01';
+                    const e = '2099-12-31';
+                    const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                    employeesData[newId] = { category: currentCalendarType, type: currentCalendarType, floor, venueDetail, name, details, startDate: s, endDate: e, budget, brand, team, memo, sortOrder: Date.now() };
+                } else {
+                    const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                    employeesData[newId] = { category: currentCalendarType, type: currentCalendarType, floor, venueDetail, name, details, startDate: start, endDate: end, budget, brand, team, memo, sortOrder: Date.now() };
+                }
+            } else {
+                const newId = 'evt_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+                employeesData[newId] = { category: currentCalendarType, type: type || currentCalendarType, floor, venueDetail, name, details, startDate: start, endDate: end, budget, brand, team, memo, sortOrder: Date.now() };
+            }
             saveCurrentMonthEmployees();
             renderRoster();
 
@@ -1742,6 +1761,8 @@ function setupEventListeners() {
                 venueDetail = sidebarVenueDetailInput ? sidebarVenueDetailInput.value.trim() : '';
             } else if (currentCalendarType === '사은행사') {
                 type = eventTypeSelect.value.trim() === '직접입력' ? eventTypeInput.value.trim() : eventTypeSelect.value.trim();
+            } else if (currentCalendarType === '미입점 브랜드') {
+                type = currentCalendarType;
             } else {
                 type = eventTypeInput.value.trim();
             }
@@ -1768,26 +1789,48 @@ function setupEventListeners() {
                 empErrorMsg.textContent = '행사명을 입력해주세요.';
                 return;
             }
-            if (!start || !end) {
-                empErrorMsg.textContent = '행사 기간을 모두 설정해주세요.';
-                return;
+            if (currentCalendarType !== '미입점 브랜드') {
+                if (!start || !end) {
+                    empErrorMsg.textContent = '행사 기간을 모두 설정해주세요.';
+                    return;
+                }
             }
 
-            employeesData[editingEventId] = {
-                ...employeesData[editingEventId],
-                category: currentCalendarType,
-                type: type || currentCalendarType,
-                floor,
-                venueDetail,
-                name,
-                details,
-                brand,
-                team,
-                budget,
-                memo,
-                startDate: start,
-                endDate: end
-            };
+            if (currentCalendarType === '미입점 브랜드') {
+                const s = start || employeesData[editingEventId].startDate || '2000-01-01';
+                const e = end || employeesData[editingEventId].endDate || '2099-12-31';
+                employeesData[editingEventId] = {
+                    ...employeesData[editingEventId],
+                    category: currentCalendarType,
+                    type: currentCalendarType,
+                    floor,
+                    venueDetail,
+                    name,
+                    details,
+                    brand,
+                    team,
+                    budget,
+                    memo,
+                    startDate: s,
+                    endDate: e
+                };
+            } else {
+                employeesData[editingEventId] = {
+                    ...employeesData[editingEventId],
+                    category: currentCalendarType,
+                    type: type || currentCalendarType,
+                    floor,
+                    venueDetail,
+                    name,
+                    details,
+                    brand,
+                    team,
+                    budget,
+                    memo,
+                    startDate: start,
+                    endDate: end
+                };
+            }
             saveCurrentMonthEmployees();
             renderRoster();
             cancelEditEvent();
@@ -1862,33 +1905,45 @@ function setupEventListeners() {
                     if (sidebarMemoSection) sidebarMemoSection.style.display = 'block';
                     if (eventDetailsLabel) eventDetailsLabel.textContent = '장소';
                     if (eventDetailsInput) eventDetailsInput.placeholder = '행사 장소를 입력하세요';
+                    if (memoArea) memoArea.style.height = '45px';
+                    const periodGroup = eventStartInput ? eventStartInput.closest('.form-group') : null;
+                    if (periodGroup) periodGroup.style.display = 'block';
+                    const mgmtHeader = document.getElementById('sidebar-mgmt-header');
+                    if (mgmtHeader) mgmtHeader.textContent = '행사 관리';
                 } else if (currentCalendarType === '미입점 브랜드') {
+                    const mgmtHeader = document.getElementById('sidebar-mgmt-header');
+                    if (mgmtHeader) mgmtHeader.textContent = '정보';
+
                     eventTypeSelect.style.display = 'none';
-                    eventTypeInput.style.display = '';
-                    eventTypeInput.value = '미입점 브랜드';
-                    eventTypeInput.readOnly = true;
-                    eventTypeInput.style.backgroundColor = 'var(--bg-main)';
-                    eventTypeInput.style.color = 'black';
+                    eventTypeInput.style.display = 'none';
+                    if (sidebarEventTypeLabel) sidebarEventTypeLabel.style.display = 'none';
 
                     if (sidebarVenueFloorGroup) sidebarVenueFloorGroup.style.display = 'none';
                     if (sidebarVenueNameGroup) sidebarVenueNameGroup.style.display = 'none';
                     if (sidebarVenueDetailGroup) sidebarVenueDetailGroup.style.display = 'none';
                     if (sidebarTeamGroup) sidebarTeamGroup.style.display = 'none';
 
-                    if (sidebarEventTypeLabel) {
-                        sidebarEventTypeLabel.style.display = 'block';
-                        sidebarEventTypeLabel.textContent = '행사 종류';
-                    }
                     if (sidebarEventNameGroup) sidebarEventNameGroup.style.display = 'block';
-                    if (sidebarEventDetailsGroup) sidebarEventDetailsGroup.style.display = 'block';
+                    if (sidebarEventDetailsGroup) sidebarEventDetailsGroup.style.display = 'none';
                     if (sidebarBrandGroup) sidebarBrandGroup.style.display = 'none';
                     if (sidebarBrandLabel) sidebarBrandLabel.textContent = '브랜드명';
                     if (sidebarBudgetGroup) sidebarBudgetGroup.style.display = 'none';
 
+                    const periodGroup = eventStartInput ? eventStartInput.closest('.form-group') : null;
+                    if (periodGroup) periodGroup.style.display = 'none';
+
                     if (sidebarMemoSection) sidebarMemoSection.style.display = 'block';
-                    if (eventDetailsLabel) eventDetailsLabel.textContent = '장소';
-                    if (eventDetailsInput) eventDetailsInput.placeholder = '장소를 입력하세요';
+                    if (memoArea) {
+                        memoArea.style.height = '200px'; // Expanded memo field
+                        memoArea.placeholder = '브랜드 관련 정보를 입력하세요';
+                    }
                 } else { // 사은행사
+                    const mgmtHeader = document.getElementById('sidebar-mgmt-header');
+                    if (mgmtHeader) mgmtHeader.textContent = '행사 관리';
+                    if (memoArea) memoArea.style.height = '45px';
+                    const periodGroup = eventStartInput ? eventStartInput.closest('.form-group') : null;
+                    if (periodGroup) periodGroup.style.display = 'block';
+
                     eventTypeSelect.style.display = '';
                     if (eventTypeSelect.value === '직접입력') {
                         eventTypeInput.style.display = 'block';
