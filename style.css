@@ -389,7 +389,7 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* Scrolling disabled */
+  height: 100%;
 }
 
 .sidebar-header {
@@ -406,10 +406,62 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   letter-spacing: 0.5px;
 }
 
+.sidebar-scroll-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
 .sidebar-body {
-  padding: 0.5rem 0.8rem;
-  flex: none;
-  overflow: visible;
+  padding: 0.5rem 0.8rem 2rem 0.8rem;
+  flex: 1;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--pr-color) transparent;
+}
+
+.sidebar-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-body::-webkit-scrollbar-thumb {
+  background-color: var(--pr-color);
+  border-radius: 10px;
+}
+
+.sidebar-nav-btn {
+  width: 100%;
+  height: 24px;
+  background: white;
+  border: none;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.3s ease;
+  z-index: 10;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.sidebar-nav-btn.down {
+  border-bottom: none;
+  border-top: 1px solid var(--border-color);
+}
+
+.sidebar-nav-btn:hover {
+  background: var(--pr-light);
+  color: var(--pr-color);
+  height: 30px; /* Expand slightly on hover */
+}
+
+.sidebar-nav-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* Forms (Re-added for Sidebar) */

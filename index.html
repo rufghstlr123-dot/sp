@@ -94,80 +94,87 @@
         <div class="sidebar-header admin-only">
           <h3>행사 관리</h3>
         </div>
-        <div class="sidebar-body admin-only">
-
-          <div class="form-group" id="sidebar-venue-floor-group" style="display: none;">
-            <label for="event-venue-floor">위치</label>
-            <input type="text" id="event-venue-floor" placeholder="예: 1F, B1 등">
-          </div>
-          <div class="form-group" id="sidebar-venue-name-group" style="display: none;">
-            <label for="event-venue-name">행사장명</label>
-            <input type="text" id="event-venue-name" placeholder="예: 이벤트홀, 소무대 등">
-          </div>
-          <div class="form-group" id="sidebar-venue-detail-group" style="display: none;">
-            <label for="event-venue-detail">상세위치</label>
-            <input type="text" id="event-venue-detail" placeholder="예: 상행 E/S 앞 등">
-          </div>
-          <div class="form-group" id="sidebar-event-type-group">
-            <label for="event-type" id="sidebar-event-type-label">행사 종류</label>
-            <select id="event-type-select">
-              <option value="자사">자사</option>
-              <option value="타사">타사</option>
-              <option value="전관">전관</option>
-              <option value="부문(패션)">부문(패션)</option>
-              <option value="부문(라이프스타일)">부문(라이프스타일)</option>
-              <option value="사은품">사은품</option>
-              <option value="직접입력">직접입력</option>
-            </select>
-            <input type="text" id="event-type" placeholder="행사 장소를 입력하세요" style="display: none;">
-          </div>
-          <div class="form-group" id="sidebar-event-name-group">
-            <label for="emp-name" id="sidebar-brand-label">행사명</label>
-            <input type="text" id="emp-name" placeholder="행사명(브랜드) 입력">
-          </div>
-          <div class="form-group" id="sidebar-event-details-group">
-            <label for="event-details" id="event-details-label">행사 내용</label>
-            <textarea id="event-details" placeholder="행사 상세 내용 입력"></textarea>
-          </div>
-          <div class="form-group" id="sidebar-brand-group" style="display: none;">
-            <label for="event-brand">대상 브랜드</label>
-            <textarea id="event-brand" placeholder="대상 브랜드 입력"></textarea>
-          </div>
-          <div class="form-group">
-            <label>행사 기간</label>
-            <div class="period-input-container">
-              <div class="period-row">
-                <input type="text" id="event-start" placeholder="YYYY-MM-DD" maxlength="10">
-                <span>부터</span>
-              </div>
-              <div class="period-row">
-                <input type="text" id="event-end" placeholder="YYYY-MM-DD" maxlength="10">
-                <span>까지</span>
+        <div class="sidebar-scroll-container admin-only">
+          <button id="sidebar-scroll-up" class="sidebar-nav-btn up" aria-label="Scroll Up">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+          </button>
+          <div class="sidebar-body">
+            <div class="form-group" id="sidebar-venue-floor-group" style="display: none;">
+              <label for="event-venue-floor">위치</label>
+              <input type="text" id="event-venue-floor" placeholder="예: 1F, B1 등">
+            </div>
+            <div class="form-group" id="sidebar-venue-name-group" style="display: none;">
+              <label for="event-venue-name">행사장명</label>
+              <input type="text" id="event-venue-name" placeholder="예: 이벤트홀, 소무대 등">
+            </div>
+            <div class="form-group" id="sidebar-venue-detail-group" style="display: none;">
+              <label for="event-venue-detail">상세위치</label>
+              <input type="text" id="event-venue-detail" placeholder="예: 상행 E/S 앞 등">
+            </div>
+            <div class="form-group" id="sidebar-event-type-group">
+              <label for="event-type" id="sidebar-event-type-label">행사 종류</label>
+              <select id="event-type-select">
+                <option value="자사">자사</option>
+                <option value="타사">타사</option>
+                <option value="전관">전관</option>
+                <option value="부문(패션)">부문(패션)</option>
+                <option value="부문(라이프스타일)">부문(라이프스타일)</option>
+                <option value="사은품">사은품</option>
+                <option value="직접입력">직접입력</option>
+              </select>
+              <input type="text" id="event-type" placeholder="행사 장소를 입력하세요" style="display: none;">
+            </div>
+            <div class="form-group" id="sidebar-event-name-group">
+              <label for="emp-name" id="sidebar-brand-label">행사명</label>
+              <input type="text" id="emp-name" placeholder="행사명(브랜드) 입력">
+            </div>
+            <div class="form-group" id="sidebar-event-details-group">
+              <label for="event-details" id="event-details-label">행사 내용</label>
+              <textarea id="event-details" placeholder="행사 상세 내용 입력"></textarea>
+            </div>
+            <div class="form-group" id="sidebar-brand-group" style="display: none;">
+              <label for="event-brand">대상 브랜드</label>
+              <textarea id="event-brand" placeholder="대상 브랜드 입력"></textarea>
+            </div>
+            <div class="form-group">
+              <label>행사 기간</label>
+              <div class="period-input-container">
+                <div class="period-row">
+                  <input type="text" id="event-start" placeholder="YYYY-MM-DD" maxlength="10">
+                  <span>부터</span>
+                </div>
+                <div class="period-row">
+                  <input type="text" id="event-end" placeholder="YYYY-MM-DD" maxlength="10">
+                  <span>까지</span>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="form-group" id="sidebar-budget-group">
-            <label for="event-budget">예산 (단위: 만원)</label>
-            <input type="number" id="event-budget" placeholder="예산 입력">
-          </div>
-          <div class="form-group" id="sidebar-team-group" style="display: none;">
-            <label for="event-team">담당팀</label>
-            <input type="text" id="event-team" placeholder="담당팀 입력">
-          </div>
-          <div class="form-group" id="sidebar-memo-section" style="display: none;">
-            <label for="memo-area">메모</label>
-            <textarea id="memo-area" placeholder="메모를 입력하세요..."></textarea>
-          </div>
-          <div id="emp-error-msg" class="error-msg"></div>
-          <div id="edit-btn-group" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
-            <div style="display: flex; gap: 0.5rem;">
-              <button id="update-emp-btn" class="primary-btn" style="flex: 1; margin: 0;">수정</button>
-              <button id="duplicate-emp-btn" class="secondary-btn" style="flex: 1; margin: 0;">복사</button>
+            <div class="form-group" id="sidebar-budget-group">
+              <label for="event-budget">예산 (단위: 만원)</label>
+              <input type="number" id="event-budget" placeholder="예산 입력">
             </div>
-            <button id="delete-emp-btn" class="danger-btn"
-              style="padding: 0.6rem; font-size: 0.85rem; margin-top: 5px; width: 100%;">삭제</button>
+            <div class="form-group" id="sidebar-team-group" style="display: none;">
+              <label for="event-team">담당팀</label>
+              <input type="text" id="event-team" placeholder="담당팀 입력">
+            </div>
+            <div class="form-group" id="sidebar-memo-section" style="display: none;">
+              <label for="memo-area">메모</label>
+              <textarea id="memo-area" placeholder="메모를 입력하세요..."></textarea>
+            </div>
+            <div id="emp-error-msg" class="error-msg"></div>
+            <div id="edit-btn-group" style="display: none; flex-direction: column; gap: 0.5rem; margin-top: 1rem;">
+              <div style="display: flex; gap: 0.5rem;">
+                <button id="update-emp-btn" class="primary-btn" style="flex: 1; margin: 0;">수정</button>
+                <button id="duplicate-emp-btn" class="secondary-btn" style="flex: 1; margin: 0;">복사</button>
+              </div>
+              <button id="delete-emp-btn" class="danger-btn"
+                style="padding: 0.6rem; font-size: 0.85rem; margin-top: 5px; width: 100%;">삭제</button>
+            </div>
+            <button id="save-emp-btn" class="primary-btn full-width" style="margin-top: 1rem;">등록하기</button>
           </div>
-          <button id="save-emp-btn" class="primary-btn full-width" style="margin-top: 1rem;">등록하기</button>
+          <button id="sidebar-scroll-down" class="sidebar-nav-btn down" aria-label="Scroll Down">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
         </div>
       </aside>
 

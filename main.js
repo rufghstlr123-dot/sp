@@ -1578,6 +1578,37 @@ function setupEventListeners() {
     if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
     if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
 
+    // Sidebar Scroll Controls
+    const sidebarBody = document.querySelector('.sidebar-body');
+    const scrollUpBtn = document.getElementById('sidebar-scroll-up');
+    const scrollDownBtn = document.getElementById('sidebar-scroll-down');
+
+    if (scrollUpBtn && sidebarBody) {
+        scrollUpBtn.onclick = () => sidebarBody.scrollBy({ top: -200, behavior: 'smooth' });
+    }
+    if (scrollDownBtn && sidebarBody) {
+        scrollDownBtn.onclick = () => sidebarBody.scrollBy({ top: 200, behavior: 'smooth' });
+    }
+
+    function updateSidebarScrollButtons() {
+        if (!sidebarBody) return;
+        const hasScroll = sidebarBody.scrollHeight > sidebarBody.clientHeight;
+        if (scrollUpBtn) {
+            scrollUpBtn.style.display = (hasScroll && sidebarBody.scrollTop > 5) ? 'flex' : 'none';
+        }
+        if (scrollDownBtn) {
+            scrollDownBtn.style.display = (hasScroll && sidebarBody.scrollTop + sidebarBody.clientHeight < sidebarBody.scrollHeight - 5) ? 'flex' : 'none';
+        }
+    }
+
+    if (sidebarBody) {
+        sidebarBody.addEventListener('scroll', updateSidebarScrollButtons);
+        // Also check on window resize
+        window.addEventListener('resize', updateSidebarScrollButtons);
+        // And initial check
+        setTimeout(updateSidebarScrollButtons, 500);
+    }
+
     if (eventTypeSelect && eventTypeInput) {
         eventTypeSelect.addEventListener('change', () => {
             if (eventTypeSelect.value === '직접입력') {
@@ -1879,6 +1910,7 @@ function setupEventListeners() {
 
                 cancelEditEvent();
                 renderRoster();
+                setTimeout(updateSidebarScrollButtons, 100);
             });
         });
     }
