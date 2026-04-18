@@ -1181,30 +1181,34 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
 .cal-type-이벤트 .r-cell,
 .cal-type-사은행사 .r-cell,
 .cal-type-행사장 .r-cell,
-.cal-type-미입점-브랜드 .r-cell,
 .cal-type-이벤트 .holiday-cell,
 .cal-type-사은행사 .holiday-cell,
 .cal-type-행사장 .holiday-cell,
-.cal-type-미입점-브랜드 .holiday-cell,
 .cal-type-이벤트 .holiday-row-label,
 .cal-type-사은행사 .holiday-row-label,
 .cal-type-행사장 .holiday-row-label,
-.cal-type-미입점-브랜드 .holiday-row-label,
 .cal-type-이벤트 .count-row-label,
 .cal-type-사은행사 .count-row-label,
 .cal-type-행사장 .count-row-label,
-.cal-type-미입점-브랜드 .count-row-label,
 .cal-type-이벤트 .count-cell,
 .cal-type-사은행사 .count-cell,
-.cal-type-행사장 .count-cell,
+.cal-type-행사장 .count-cell {
+  min-height: 54px;
+}
+
+.cal-type-미입점-브랜드 .r-cell,
+.cal-type-미입점-브랜드 .employee-name-cell,
+.cal-type-미입점-브랜드 .holiday-cell,
+.cal-type-미입점-브랜드 .holiday-row-label,
+.cal-type-미입점-브랜드 .count-row-label,
 .cal-type-미입점-브랜드 .count-cell {
+  height: auto !important;
   min-height: 54px;
 }
 
 .cal-type-이벤트 .employee-name-cell,
 .cal-type-사은행사 .employee-name-cell,
-.cal-type-행사장 .employee-name-cell,
-.cal-type-미입점-브랜드 .employee-name-cell {
+.cal-type-행사장 .employee-name-cell {
   min-height: 54px;
   padding: 0.8rem 1rem !important;
 }
