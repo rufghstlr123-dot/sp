@@ -853,8 +853,12 @@ function renderRoster() {
 
     currentMonthDisplay.textContent = `${year}년 ${month + 1}월`;
     rosterGrid.innerHTML = '';
-    rosterGrid.classList.remove('cal-type-행사장', 'cal-type-이벤트', 'cal-type-사은행사');
-    rosterGrid.classList.add(`cal-type-${currentCalendarType}`);
+    // Remove any existing cal-type- classes
+    Array.from(rosterGrid.classList).forEach(cls => {
+        if (cls.startsWith('cal-type-')) rosterGrid.classList.remove(cls);
+    });
+    // Add sanitized class name (replaces spaces with hyphens for valid CSS class)
+    rosterGrid.classList.add(`cal-type-${currentCalendarType.replace(/\s+/g, '-')}`);
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     if (currentCalendarType === '행사장') {
