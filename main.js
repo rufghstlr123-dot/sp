@@ -935,13 +935,7 @@ function renderRoster() {
         const lastDayOfMonth = new Date(year, month + 1, 0);
 
         unOrderedTypesToRender = [...new Set(eventsInCat.map(e => e.type))].sort().filter(type => {
-            return eventsInCat.some(e => {
-                if (e.type !== type) return false;
-                if (!e.startDate || !e.endDate) return false;
-                const start = parseLocalDate(e.startDate);
-                const end = parseLocalDate(e.endDate);
-                return start <= lastDayOfMonth && end >= firstDayOfMonth;
-            });
+            return eventsInCat.some(e => e.type === type);
         });
     }
 
@@ -1655,9 +1649,11 @@ function setupEventListeners() {
                 empErrorMsg.textContent = '행사명을 입력해주세요.';
                 return;
             }
-            if (!start || !end) {
-                empErrorMsg.textContent = '행사 기간을 모두 설정해주세요.';
-                return;
+            if (currentCalendarType !== '미입점 브랜드') {
+                if (!start || !end) {
+                    empErrorMsg.textContent = '행사 기간을 모두 설정해주세요.';
+                    return;
+                }
             }
 
             if (currentCalendarType === '미입점 브랜드') {
@@ -1862,6 +1858,19 @@ function setupEventListeners() {
                 calTabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
 
+                // Reset sidebar header, memo style and labels by default
+                const mgmtHeader = document.getElementById('sidebar-mgmt-header');
+                if (mgmtHeader) mgmtHeader.textContent = '행사 관리';
+                if (memoArea) {
+                    memoArea.style.height = '45px';
+                    memoArea.placeholder = '메모를 입력하세요...';
+                }
+                const periodGroup = eventStartInput ? eventStartInput.closest('.form-group') : null;
+                if (periodGroup) periodGroup.style.display = 'block';
+                if (eventDetailsLabel) eventDetailsLabel.textContent = '행사 내용';
+                if (eventDetailsInput) eventDetailsInput.placeholder = '행사 상세 내용 입력';
+                if (sidebarBrandLabel) sidebarBrandLabel.textContent = '행사명';
+
                 if (currentCalendarType === '행사장') {
                     eventTypeSelect.style.display = 'none';
                     eventTypeInput.style.display = 'none';
@@ -1905,11 +1914,7 @@ function setupEventListeners() {
                     if (sidebarMemoSection) sidebarMemoSection.style.display = 'block';
                     if (eventDetailsLabel) eventDetailsLabel.textContent = '장소';
                     if (eventDetailsInput) eventDetailsInput.placeholder = '행사 장소를 입력하세요';
-                    if (memoArea) memoArea.style.height = '45px';
-                    const periodGroup = eventStartInput ? eventStartInput.closest('.form-group') : null;
-                    if (periodGroup) periodGroup.style.display = 'block';
-                    const mgmtHeader = document.getElementById('sidebar-mgmt-header');
-                    if (mgmtHeader) mgmtHeader.textContent = '행사 관리';
+                    if (sidebarBrandLabel) sidebarBrandLabel.textContent = '이벤트명';
                 } else if (currentCalendarType === '미입점 브랜드') {
                     const mgmtHeader = document.getElementById('sidebar-mgmt-header');
                     if (mgmtHeader) mgmtHeader.textContent = '정보';
@@ -1938,12 +1943,6 @@ function setupEventListeners() {
                         memoArea.placeholder = '브랜드 관련 정보를 입력하세요';
                     }
                 } else { // 사은행사
-                    const mgmtHeader = document.getElementById('sidebar-mgmt-header');
-                    if (mgmtHeader) mgmtHeader.textContent = '행사 관리';
-                    if (memoArea) memoArea.style.height = '45px';
-                    const periodGroup = eventStartInput ? eventStartInput.closest('.form-group') : null;
-                    if (periodGroup) periodGroup.style.display = 'block';
-
                     eventTypeSelect.style.display = '';
                     if (eventTypeSelect.value === '직접입력') {
                         eventTypeInput.style.display = 'block';
