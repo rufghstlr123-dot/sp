@@ -873,6 +873,8 @@ function renderRoster() {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     if (currentCalendarType === '행사장') {
         rosterGrid.style.gridTemplateColumns = `60px 120px repeat(${daysInMonth}, minmax(100px, 1fr))`;
+    } else if (currentCalendarType === '미입점 브랜드') {
+        rosterGrid.style.gridTemplateColumns = `minmax(200px, auto) 1fr`;
     } else {
         rosterGrid.style.gridTemplateColumns = `minmax(180px, auto) repeat(${daysInMonth}, minmax(100px, 1fr))`;
     }
@@ -970,90 +972,101 @@ function renderRoster() {
     }
 
     // --- 2. Date Header ---
-    if (currentCalendarType === '행사장') {
-        const floorHeader = document.createElement('div');
-        floorHeader.className = 'r-cell r-corner';
-        floorHeader.textContent = '위치';
-        floorHeader.style.left = '0';
-        floorHeader.style.zIndex = '120';
-        rosterGrid.appendChild(floorHeader);
-
+    if (currentCalendarType === '미입점 브랜드') {
         const nameHeader = document.createElement('div');
         nameHeader.className = 'r-cell r-corner';
-        nameHeader.textContent = '행사장명';
-        nameHeader.style.left = '60px'; // Sticky after the first 60px column
-        nameHeader.style.zIndex = '120';
+        nameHeader.textContent = '브랜드명';
         rosterGrid.appendChild(nameHeader);
+
+        const memoHeader = document.createElement('div');
+        memoHeader.className = 'r-cell r-corner';
+        memoHeader.textContent = '메모';
+        rosterGrid.appendChild(memoHeader);
     } else {
-        const cornerCell = document.createElement('div');
-        cornerCell.className = 'r-cell r-corner';
-        cornerCell.textContent = '일자';
-        rosterGrid.appendChild(cornerCell);
-    }
+        if (currentCalendarType === '행사장') {
+            const floorHeader = document.createElement('div');
+            floorHeader.className = 'r-cell r-corner';
+            floorHeader.textContent = '위치';
+            floorHeader.style.left = '0';
+            floorHeader.style.zIndex = '120';
+            rosterGrid.appendChild(floorHeader);
 
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayOfWeek = new Date(year, month, day).getDay();
-        const headerCell = document.createElement('div');
-        headerCell.className = `r-cell r-header`;
-        if (dayOfWeek === 0 || dayOfWeek === 6 || getHolidayName(year, month + 1, day)) {
-            headerCell.classList.add('is-holiday');
-            headerCell.classList.add('is-holiday-bg');
+            const nameHeader = document.createElement('div');
+            nameHeader.className = 'r-cell r-corner';
+            nameHeader.textContent = '행사장명';
+            nameHeader.style.left = '60px'; // Sticky after the first 60px column
+            nameHeader.style.zIndex = '120';
+            rosterGrid.appendChild(nameHeader);
+        } else {
+            const cornerCell = document.createElement('div');
+            cornerCell.className = 'r-cell r-corner';
+            cornerCell.textContent = '일자';
+            rosterGrid.appendChild(cornerCell);
         }
-        if (dayOfWeek === 0) {
-            headerCell.classList.add('sun-border');
-        }
 
-        const numSpan = document.createElement('span');
-        numSpan.className = 'date-num';
-        numSpan.textContent = day;
-
-        const dowSpan = document.createElement('span');
-        dowSpan.textContent = DAYS_KR[dayOfWeek];
-
-        headerCell.appendChild(numSpan);
-        headerCell.appendChild(dowSpan);
-        rosterGrid.appendChild(headerCell);
-    }
-
-    // --- 3. Holiday Row ---
-    const holidayRowLabel = document.createElement('div');
-    holidayRowLabel.className = 'r-cell r-col-header holiday-row-label';
-    if (currentCalendarType === '행사장') {
-        holidayRowLabel.style.gridColumn = 'span 2';
-    }
-    holidayRowLabel.textContent = '공휴일';
-    holidayRowLabel.style.borderBottom = '1px solid black';
-    rosterGrid.appendChild(holidayRowLabel);
-
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const dayOfWeek = new Date(year, month, day).getDay();
-        const holidayName = getHolidayName(year, month + 1, day);
-        const holiCell = document.createElement('div');
-        holiCell.className = 'r-cell holiday-cell';
-        holiCell.style.borderBottom = '1px solid black';
-        if (dayOfWeek === 0) holiCell.classList.add('sun-border');
-        if (holidayName) holiCell.textContent = holidayName;
-
-        holiCell.contentEditable = hasPermission('edit_holiday') ? "true" : "false";
-        holiCell.onblur = () => {
-            if (!hasPermission('edit_holiday')) return;
-            const newValue = holiCell.innerText.trim();
-            saveCustomHoliday(dateStr, newValue);
-        };
-        holiCell.onkeydown = (e) => {
-            if (e.key === 'Enter') {
-                if (e.altKey) {
-                    e.preventDefault();
-                    document.execCommand('insertLineBreak');
-                    return;
-                }
-                e.preventDefault();
-                holiCell.blur();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayOfWeek = new Date(year, month, day).getDay();
+            const headerCell = document.createElement('div');
+            headerCell.className = `r-cell r-header`;
+            if (dayOfWeek === 0 || dayOfWeek === 6 || getHolidayName(year, month + 1, day)) {
+                headerCell.classList.add('is-holiday');
+                headerCell.classList.add('is-holiday-bg');
             }
-        };
+            if (dayOfWeek === 0) {
+                headerCell.classList.add('sun-border');
+            }
 
-        rosterGrid.appendChild(holiCell);
+            const numSpan = document.createElement('span');
+            numSpan.className = 'date-num';
+            numSpan.textContent = day;
+
+            const dowSpan = document.createElement('span');
+            dowSpan.textContent = DAYS_KR[dayOfWeek];
+
+            headerCell.appendChild(numSpan);
+            headerCell.appendChild(dowSpan);
+            rosterGrid.appendChild(headerCell);
+        }
+
+        // --- 3. Holiday Row ---
+        const holidayRowLabel = document.createElement('div');
+        holidayRowLabel.className = 'r-cell r-col-header holiday-row-label';
+        if (currentCalendarType === '행사장') {
+            holidayRowLabel.style.gridColumn = 'span 2';
+        }
+        holidayRowLabel.textContent = '공휴일';
+        holidayRowLabel.style.borderBottom = '1px solid black';
+        rosterGrid.appendChild(holidayRowLabel);
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayOfWeek = new Date(year, month, day).getDay();
+            const holidayName = getHolidayName(year, month + 1, day);
+            const holiCell = document.createElement('div');
+            holiCell.className = 'r-cell holiday-cell';
+            holiCell.style.borderBottom = '1px solid black';
+            if (dayOfWeek === 0) holiCell.classList.add('sun-border');
+            if (holidayName) holiCell.textContent = holidayName;
+
+            holiCell.contentEditable = hasPermission('edit_holiday') ? "true" : "false";
+            holiCell.onblur = () => {
+                if (!hasPermission('edit_holiday')) return;
+                const newValue = holiCell.innerText.trim();
+                saveCustomHoliday(dateStr, newValue);
+            };
+            holiCell.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    if (e.altKey) {
+                        e.preventDefault();
+                        document.execCommand('insertLineBreak');
+                        return;
+                    }
+                    e.preventDefault();
+                    holiCell.blur();
+                }
+            };
+            rosterGrid.appendChild(holiCell);
+        }
     }
 
     // --- 4. Event Type Row ---
@@ -1208,6 +1221,32 @@ function renderRoster() {
             }
 
             rosterGrid.appendChild(nameCell);
+
+            // --- '미입점 브랜드' Tab Custom Row Content ---
+            if (currentCalendarType === '미입점 브랜드') {
+                const memoCell = document.createElement('div');
+                memoCell.className = 'r-cell r-entry';
+                memoCell.style.borderBottom = '1px solid black';
+                memoCell.style.padding = '0.8rem 1rem';
+                memoCell.style.fontSize = '0.9rem';
+                memoCell.style.textAlign = 'left';
+                memoCell.style.whiteSpace = 'pre-wrap';
+                memoCell.style.wordBreak = 'break-all';
+                memoCell.style.display = 'flex';
+                memoCell.style.alignItems = 'center';
+                memoCell.style.cursor = 'pointer';
+
+                // Get memo from the first event for this brand
+                const firstEvt = eventsForType[0][1];
+                memoCell.textContent = firstEvt.memo || '';
+
+                // Allow clicking to edit/view details
+                memoCell.onclick = () => showEventModal(eventsForType[0][0]);
+
+                rosterGrid.appendChild(memoCell);
+                currentRowIdx++;
+                return;
+            }
 
             lanes.forEach((laneEvents, laneIdx) => {
                 for (let day = 1; day <= daysInMonth; day++) {
