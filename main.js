@@ -2214,7 +2214,7 @@ function performSearch(query) {
                     <span class="search-result-badge badge-${res.category}">${res.category}</span>
                 </div>
                 <div class="search-result-info">
-                    <span class="search-result-period">${res.startDate} ~ ${res.endDate}</span>
+                    ${res.category === '미입점 브랜드' ? '' : `<span class="search-result-period">${res.startDate} ~ ${res.endDate}</span>`}
                     <span>${res.category === '행사장' ? (res.floor ? res.floor + ' ' : '') + res.type + (res.venueDetail ? ' (' + res.venueDetail + ')' : '') : res.type}</span>
                 </div>
                 ${res.brand ? `<div style="font-size: 0.75rem; color: #64748b; margin-top: 2px;">브랜드: ${res.brand}</div>` : ''}
