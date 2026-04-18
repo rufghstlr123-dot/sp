@@ -1818,7 +1818,7 @@ function setupEventListeners() {
                     if (sidebarBrandLabel) sidebarBrandLabel.textContent = '브랜드';
                     if (sidebarBudgetGroup) sidebarBudgetGroup.style.display = 'none';
 
-                    if (sidebarMemoSection) sidebarMemoSection.style.display = 'none';
+                    if (sidebarMemoSection) sidebarMemoSection.style.display = 'block';
                 } else if (currentCalendarType === '이벤트') {
                     eventTypeSelect.style.display = 'none';
                     eventTypeInput.style.display = '';
