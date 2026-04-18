@@ -931,12 +931,8 @@ function renderRoster() {
             const cat = e.category || (['사은행사', '이벤트', '행사장', '미입점 브랜드'].includes(e.type) ? e.type : '사은행사');
             return cat === '미입점 브랜드';
         });
-        const firstDayOfMonth = new Date(year, month, 1);
-        const lastDayOfMonth = new Date(year, month + 1, 0);
 
-        unOrderedTypesToRender = [...new Set(eventsInCat.map(e => e.type))].sort().filter(type => {
-            return eventsInCat.some(e => e.type === type);
-        });
+        unOrderedTypesToRender = [...new Set(eventsInCat.map(e => e.name || '미입점'))].sort();
     }
 
     const savedOrder = getRowOrder(currentCalendarType);
@@ -1077,6 +1073,9 @@ function renderRoster() {
                         if (e.type !== type) return false;
                         if ((e.floor || '') !== floor) return false;
                         if ((e.venueDetail || '') !== vDetail) return false; // Filter by venueDetail
+                    } else if (currentCalendarType === '미입점 브랜드') {
+                        if ((e.name || '미입점') !== type) return false;
+                        return true; // Skip date check for this category
                     } else {
                         if (e.type !== type) return false;
                     }
