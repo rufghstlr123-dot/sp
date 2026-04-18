@@ -1622,6 +1622,8 @@ function setupEventListeners() {
                 venueDetail = sidebarVenueDetailInput ? sidebarVenueDetailInput.value.trim() : '';
             } else if (currentCalendarType === '사은행사') {
                 type = eventTypeSelect.value.trim() === '직접입력' ? eventTypeInput.value.trim() : eventTypeSelect.value.trim();
+            } else if (currentCalendarType === '미입점 브랜드') {
+                type = '미입점 브랜드';
             } else {
                 type = eventTypeInput.value.trim();
             }
@@ -1639,7 +1641,7 @@ function setupEventListeners() {
                 if (!floor) { empErrorMsg.textContent = '층을 입력해주세요.'; return; }
                 if (!type) { empErrorMsg.textContent = '행사장명을 입력해주세요.'; return; }
             } else {
-                if (!type) {
+                if (!type && currentCalendarType !== '미입점 브랜드') {
                     empErrorMsg.textContent = '행사 종류를 입력해주세요.';
                     return;
                 }
