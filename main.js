@@ -114,6 +114,7 @@ const modalCancelEndBtn = document.getElementById('modal-cancel-end-btn');
 const modalName = document.getElementById('modal-event-name');
 const modalType = document.getElementById('modal-event-type');
 const modalPeriod = document.getElementById('modal-event-period');
+const modalPeriodGroup = document.getElementById('modal-period-group');
 const modalBudget = document.getElementById('modal-event-budget');
 const modalDetails = document.getElementById('modal-event-details');
 const modalDetailsLabel = document.getElementById('modal-details-label');
@@ -534,6 +535,15 @@ window.showEventModal = function (empId) {
                 modalBudgetGroup.style.display = 'none';
             }
         }
+    }
+    
+    // Custom logic for '미입점 브랜드' tab popup
+    if (e.category === '미입점 브랜드') {
+        if (modalPeriodGroup) modalPeriodGroup.style.display = 'none';
+        if (modalEventDetailsGroup) modalEventDetailsGroup.style.display = 'none';
+        if (modalType) modalType.style.display = 'none';
+    } else {
+        if (modalPeriodGroup) modalPeriodGroup.style.display = 'block';
     }
 
     if (e.memo) {
