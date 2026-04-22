@@ -38,14 +38,16 @@ function loadLocalState(key, defaultVal) {
     }
 }
 
-function getRowOrder(calendarType) {
+function getRowOrder(calendarType, monthKey) {
     const orders = loadLocalState(LS_KEYS.ROW_ORDER, {});
-    return orders[calendarType] || [];
+    const key = monthKey ? `${calendarType}_${monthKey}` : calendarType;
+    return orders[key] || [];
 }
 
-function saveRowOrder(calendarType, orderArray) {
+function saveRowOrder(calendarType, orderArray, monthKey) {
     const orders = loadLocalState(LS_KEYS.ROW_ORDER, {});
-    orders[calendarType] = orderArray;
+    const key = monthKey ? `${calendarType}_${monthKey}` : calendarType;
+    orders[key] = orderArray;
     saveLocalState(LS_KEYS.ROW_ORDER, orders);
 }
 
@@ -966,7 +968,7 @@ function renderRoster() {
         unOrderedTypesToRender = [...new Set(eventsInCat.map(e => e.name || '미입점'))].sort();
     }
 
-    const savedOrder = getRowOrder(currentCalendarType);
+    const savedOrder = getRowOrder(currentCalendarType, getMonthKey());
     let typesToRender = [...unOrderedTypesToRender];
     if (currentCalendarType === '미입점 브랜드') {
         // Sort alphabetically by brand name for this category
@@ -2401,7 +2403,7 @@ function handleRowDrop(e) {
         newOrder.splice(toIndex, 0, draggedRowType);
     }
 
-    saveRowOrder(currentCalendarType, newOrder);
+    saveRowOrder(currentCalendarType, newOrder, getMonthKey());
     renderRoster();
     return false;
 }
