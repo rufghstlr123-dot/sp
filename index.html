@@ -11,6 +11,8 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- Firebase SDK (v8 compat) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -43,11 +45,13 @@
       <div class="header-left">
         <h1>서비스데스크 판촉캘린더</h1>
       </div>
-      <div id="header-buttons-group" style="display: flex; gap: 0.5rem; align-items: center;">
+      <div id="header-buttons-group" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <button id="excluded-brands-btn" class="secondary-btn header-action-btn"
-          style="margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;">지급제외 브랜드</button>
+          style="margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem; white-space: nowrap;">지급제외 브랜드</button>
         <button id="interest-free-btn" class="secondary-btn header-action-btn"
-          style="margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem;">무이자</button>
+          style="margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem; white-space: nowrap;">무이자</button>
+        <button id="bin-system-btn" class="secondary-btn header-action-btn"
+          style="width: auto; margin-top: 0; padding: 0.4rem 0.8rem; font-size: 0.85rem; white-space: nowrap;">행사 대상 카드 조회</button>
       </div>
       <div class="month-navigation">
         <button id="prev-btn" class="nav-btn" aria-label="Previous Month">
@@ -331,6 +335,90 @@
             <!-- Results injected by JS -->
           </ul>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BIN Validation System Modal -->
+  <div id="bin-system-modal" class="modal-backdrop hidden">
+    <div class="modal hyundai-modal" style="max-width: 800px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; padding: 0; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+      <div class="modal-header" style="background: linear-gradient(135deg, #003025 0%, #004838 100%); color: white; border-bottom: none; border-radius: 12px 12px 0 0; padding: 1.25rem 1.5rem;">
+        <h3 style="color: white; margin: 0; border: none; font-size: 1.3rem;">행사 대상 카드 조회 시스템</h3>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <div class="bin-mode-toggle admin-only" style="margin-top: 0;">
+            <input type="checkbox" id="binModeSwitch" onchange="toggleBinMode()">
+            <label for="binModeSwitch" class="bin-toggle-label" style="height: 30px; width: 100px;">
+              <span class="bin-toggle-text-guest" style="font-size: 0.75rem;">조회</span>
+              <span class="bin-toggle-text-admin" style="font-size: 0.75rem;">관리</span>
+            </label>
+          </div>
+          <button id="bin-system-close-btn" class="close-btn" style="color: white; font-size: 1.5rem; opacity: 1;">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body" style="background: linear-gradient(135deg, #003025 0%, #004838 100%); padding: 1.5rem; flex: 1; overflow-y: auto; color: white;">
+        
+        <!-- 로딩 오버레이 -->
+        <div id="binLoadingOverlay" class="loading-overlay hidden" style="position: absolute; border-radius: 12px; z-index: 1000; background: rgba(0,48,37,0.8); inset:0; display: none; justify-content:center; align-items:center;">
+          <div class="spinner" style="width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.1); border-top-color: white; border-radius: 50%; animation: binSpin 1s linear infinite;"></div>
+        </div>
+        
+        <main id="binSystemMain" style="position:relative;">
+            <!-- 게스트 모드 (카드 조회) -->
+            <section id="binGuestSection" class="bin-section active">
+                <div class="bin-glass-panel" style="text-align: center; padding: 60px 40px;">
+                    <p class="subtitle" style="font-size: 1.15rem; margin-top: 10px; font-weight: 500; text-align: center; margin-bottom: 30px;">영수증에 적힌 카드번호의 첫 6자리를 입력하여 행사 대상 여부를 확인하세요.</p>
+                    
+                    <div class="bin-search-container">
+                        <input type="text" id="binInput" placeholder="BIN번호 입력 (최대 6자리)" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        <button class="bin-btn bin-btn-primary" onclick="checkBin()">조회하기</button>
+                    </div>
+
+                    <div id="binResultContainer" class="bin-result-container hidden"></div>
+                </div>
+            </section>
+
+            <!-- 관리자 모드 (데이터 업로드) -->
+            <section id="binAdminSection" class="bin-section hidden">
+                <div class="bin-glass-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h1 style="font-size: 1.4rem; color: white;">카드 데이터 관리</h1>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="bin-btn bin-btn-outline" onclick="downloadSample()">샘플 다운로드</button>
+                            <button class="bin-btn bin-btn-outline" onclick="clearBinData()">데이터 초기화</button>
+                        </div>
+                    </div>
+                    <p class="subtitle" style="margin-bottom: 25px; opacity: 0.8; font-size: 0.95rem;">.csv 또는 .xlsx 파일을 업로드하여 BIN 데이터를 최신화할 수 있습니다.</p>
+                    <p style="font-size: 0.85rem; margin-bottom: 25px; color: rgba(255, 255, 255, 0.7); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px;">필수 컬럼 (헤더): <strong>대상 행사, BIN번호, 카드사명, 결제망</strong></p>
+
+                    <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
+                        <input type="file" id="binCsvFile" accept=".csv, .xlsx, .xls" class="bin-file-input">
+                        <label for="binCsvFile" class="bin-file-label" id="binFileLabel">
+                            <span class="bin-upload-icon">📁</span>
+                            <span id="binFileName">파일을 선택하거나 드래그 앤 드롭 하세요 (CSV, XLSX)</span>
+                        </label>
+                        <button class="bin-btn bin-btn-primary" onclick="uploadBinCsv()">업로드</button>
+                    </div>
+
+                    <div style="text-align: right; margin-bottom: 15px;">
+                        <p style="color: white; font-size: 0.95rem;">현재 등록된 데이터: <span id="binDataCount">0</span>건</p>
+                    </div>
+
+                    <div style="background: rgba(0, 0, 0, 0.2); border-radius: 10px; overflow: auto; max-height: 400px;">
+                        <table id="binDataTable" style="width: 100%; border-collapse: collapse; text-align: center;">
+                            <thead>
+                                <tr>
+                                    <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">대상 행사</th>
+                                    <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">BIN번호</th>
+                                    <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">카드사명</th>
+                                    <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">결제망</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
       </div>
     </div>
   </div>

@@ -1287,3 +1287,215 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   color: var(--pr-color);
   font-weight: 600;
 }
+
+/* =========================================
+   BIN Validation System Styles (Scoped)
+   ========================================= */
+
+.bin-glass-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.bin-search-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.bin-search-container input[type="text"] {
+    flex-grow: 1;
+    padding: 15px 20px;
+    font-size: 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    outline: none;
+    transition: all 0.3s;
+}
+
+.bin-search-container input[type="text"]:focus {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: white;
+}
+
+.bin-search-container input[type="text"]::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.bin-btn {
+    padding: 15px 30px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+}
+
+.bin-btn-primary {
+    background: white;
+    color: #003025;
+}
+
+.bin-btn-primary:hover {
+    background: #f5f5f5;
+    transform: translateY(-2px);
+}
+
+.bin-btn-outline {
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+
+.bin-btn-outline:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.bin-result-container {
+    margin-top: 30px;
+    padding: 25px;
+    border-radius: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid;
+    transition: all 0.3s;
+}
+
+.bin-result-container.hidden {
+    display: none;
+}
+
+.bin-result-success { border-color: white; }
+.bin-result-fail { border-color: rgba(255, 255, 255, 0.3); }
+
+.bin-result-title {
+    font-size: 1.4rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+.bin-result-success .bin-result-title { color: white; }
+.bin-result-fail .bin-result-title { color: #ff9e9e; }
+
+.bin-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.bin-info-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.bin-info-label {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 5px;
+}
+
+.bin-info-value {
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: white;
+}
+
+/* Toggle */
+.bin-mode-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+#binModeSwitch { display: none; }
+.bin-toggle-label {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 30px !important;
+    padding: 5px !important;
+    width: 140px !important;
+    height: 40px !important;
+    justify-content: space-between !important;
+}
+.bin-toggle-label::before {
+    content: '' !important;
+    position: absolute !important;
+    width: 65px !important;
+    height: 30px !important;
+    border-radius: 20px !important;
+    background: white !important;
+    left: 4px !important;
+    transition: 0.3s ease-in-out !important;
+}
+#binModeSwitch:checked + .bin-toggle-label::before {
+    transform: translateX(65px);
+}
+.bin-toggle-text-guest, .bin-toggle-text-admin {
+    z-index: 1;
+    font-size: 0.85rem;
+    font-weight: 600;
+    width: 50%;
+    text-align: center;
+    transition: color 0.3s;
+}
+.bin-toggle-text-guest { color: #003025; }
+.bin-toggle-text-admin { color: white; }
+#binModeSwitch:checked + .bin-toggle-label .bin-toggle-text-guest { color: white; }
+#binModeSwitch:checked + .bin-toggle-label .bin-toggle-text-admin { color: #003025; }
+
+/* Admin File Upload */
+.bin-file-input { display: none; }
+.bin-file-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: rgba(255, 255, 255, 0.02);
+}
+.bin-file-label:hover, .bin-file-label.dragover {
+    border-color: white;
+    background: rgba(255, 255, 255, 0.05);
+}
+.bin-upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+#binDataTable td { color: white; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 10px; }
+#binDataTable tr:hover td { background: rgba(255, 255, 255, 0.05); }
+
+/* Animation / Layout */
+.bin-section { display: none; animation: binFadeIn 0.4s ease forwards; }
+.bin-section.active { display: block; }
+@keyframes binFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes binSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

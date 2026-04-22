@@ -2406,3 +2406,348 @@ function handleRowDrop(e) {
 window.deleteEmployee = deleteEmployee;
 
 init();
+
+/* =========================================
+   BIN Validation System Logic (Scoped)
+   ========================================= */
+(function() {
+    const STORAGE_KEY = 'hyundai_bin_data';
+    let binData = [];
+
+    // Elements
+    const btnOpen = document.getElementById('bin-system-btn');
+    const modal = document.getElementById('bin-system-modal');
+    const btnClose = document.getElementById('bin-system-close-btn');
+
+    const guestSection = document.getElementById('binGuestSection');
+    const adminSection = document.getElementById('binAdminSection');
+    
+    // We attach functions to window so they can be called from inline HTML (onclick="")
+    window.toggleBinMode = function() {
+        const isAdmin = document.getElementById('binModeSwitch').checked;
+        if (isAdmin) {
+            // 관리자 모드: 조회 및 관리 모두 보이게 함 (guestSection 유지)
+            adminSection.classList.remove('hidden');
+            setTimeout(() => adminSection.classList.add('active'), 50);
+        } else {
+            // 게스트 모드: 관리 섹션 숨김
+            adminSection.classList.remove('active');
+            setTimeout(() => {
+                adminSection.classList.add('hidden');
+            }, 300);
+            
+            // 모드 전환 시 조회 데이터 초기화 (선택 사항이지만 유지)
+            document.getElementById('binInput').value = '';
+            document.getElementById('binResultContainer').classList.add('hidden');
+        }
+    };
+
+    function loadBinData() {
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            binData = stored ? JSON.parse(stored) : [];
+            renderBinTable();
+        } catch (e) {
+            console.error(e);
+            binData = [];
+            showBinToast('데이터를 불러오는데 실패했습니다.');
+        }
+    }
+
+    function renderBinTable() {
+        const dataCountDisplay = document.getElementById('binDataCount');
+        const dataTableBody = document.querySelector('#binDataTable tbody');
+        if(!dataTableBody) return;
+
+        dataCountDisplay.textContent = binData.length.toLocaleString();
+        dataTableBody.innerHTML = '';
+        
+        const displayData = binData.slice(0, 100);
+        if (displayData.length === 0) {
+            dataTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: rgba(255,255,255,0.5);">데이터가 없습니다.</td></tr>';
+            return;
+        }
+
+        displayData.forEach(row => {
+            const tr = document.createElement('tr');
+            const safeBin = row['BIN번호'] ? row['BIN번호'].toString().replace(/[^0-9]/g, '').replace(/^(\d{4})(\d+)$/, '$1-$2') : '-';
+            tr.innerHTML = `
+                <td>${row['대상 행사'] || '-'}</td>
+                <td>${safeBin}</td>
+                <td>${row['카드사명'] || '-'}</td>
+                <td>${row['결제망'] || '-'}</td>
+            `;
+            dataTableBody.appendChild(tr);
+        });
+        
+        if (binData.length > 100) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="4" style="text-align: center; color: rgba(255,255,255,0.5);">... 외 ${binData.length - 100}건 생략됨 ...</td>`;
+            dataTableBody.appendChild(tr);
+        }
+    }
+
+    window.checkBin = function() {
+        const binInput = document.getElementById('binInput');
+        if (binData.length === 0) {
+            showBinToast('등록된 카드 데이터가 없습니다. 관리자에게 문의하세요.');
+            return;
+        }
+        const inputVal = binInput.value.trim();
+        if (inputVal.length !== 6) {
+            showBinToast('BIN 번호를 정확히 6자리 입력해주세요.');
+            return;
+        }
+
+        const match = binData.find(row => {
+            const dbBin = row['BIN번호'];
+            if (!dbBin) return false;
+            const cleanDbBin = dbBin.toString().replace(/[^0-9]/g, '');
+            return cleanDbBin.startsWith(inputVal) || inputVal.startsWith(cleanDbBin);
+        });
+
+        renderBinResult(match, inputVal);
+    };
+
+    function renderBinResult(match, inputVal) {
+        const resultContainer = document.getElementById('binResultContainer');
+        resultContainer.classList.remove('hidden', 'bin-result-success', 'bin-result-fail');
+        
+        if (match) {
+            const eventName = match['대상 행사'] || '알 수 없는 행사';
+            resultContainer.classList.add('bin-result-success');
+            resultContainer.innerHTML = `
+                <h3 class="bin-result-title"><strong style="color: #ffd86b; font-weight: 700;">${eventName}</strong> 행사 대상 카드입니다.</h3>
+                <div class="bin-info-grid">
+                    <div class="bin-info-item">
+                        <span class="bin-info-label">대상 행사</span>
+                        <span class="bin-info-value">${match['대상 행사'] || '-'}</span>
+                    </div>
+                    <div class="bin-info-item">
+                        <span class="bin-info-label">BIN번호</span>
+                        <span class="bin-info-value">${match['BIN번호'] ? match['BIN번호'].toString().replace(/[^0-9]/g, '').replace(/^(\d{4})(\d+)$/, '$1-$2') : '-'}</span>
+                    </div>
+                    <div class="bin-info-item">
+                        <span class="bin-info-label">카드사명</span>
+                        <span class="bin-info-value">${match['카드사명'] || '-'}</span>
+                    </div>
+                    <div class="bin-info-item">
+                        <span class="bin-info-label">결제망</span>
+                        <span class="bin-info-value">${match['결제망'] || '-'}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            resultContainer.classList.add('bin-result-fail');
+            resultContainer.innerHTML = `
+                <span class="bin-upload-icon">⚠️</span>
+                <h3 class="bin-result-title">정보를 찾을 수 없습니다</h3>
+                <p style="color:white;">입력하신 BIN번호(${inputVal})와 일치하는 카드 정보를 찾을 수 없습니다.</p>
+                <p style="margin-top:10px; font-size: 0.85rem; color:rgba(255,255,255,0.7);">번호를 다시 한 번 확인해주시거나 관리자에게 문의하세요.</p>
+            `;
+        }
+    }
+
+    // Modal Control
+    if (btnOpen) {
+        btnOpen.addEventListener('click', () => {
+            // 초기화면 셋업 (스위치, 모드, 인풋, 결과 초기화)
+            const binModeSwitch = document.getElementById('binModeSwitch');
+            if (binModeSwitch) binModeSwitch.checked = false;
+            
+            adminSection.classList.remove('active');
+            adminSection.classList.add('hidden');
+            
+            const binInput = document.getElementById('binInput');
+            if (binInput) binInput.value = '';
+            document.getElementById('binResultContainer').classList.add('hidden');
+
+            modal.classList.remove('hidden');
+            loadBinData();
+            if (binInput) setTimeout(() => binInput.focus(), 100);
+        });
+    }
+
+    function closeBinModal() {
+        modal.classList.add('hidden');
+    }
+
+    if (btnClose) {
+        btnClose.addEventListener('click', closeBinModal);
+    }
+
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeBinModal();
+            }
+        });
+    }
+
+    const binInput = document.getElementById('binInput');
+    if (binInput) {
+        binInput.addEventListener('keypress', (e) => {
+            // 엔터 키 입력 시 조회 실행
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkBin();
+            }
+        });
+    }
+
+    function showBinLoading(show) {
+        const loader = document.getElementById('binLoadingOverlay');
+        if(loader) show ? (loader.style.display = 'flex') : (loader.style.display = 'none');
+    }
+
+    function showBinToast(message) {
+        if(window.showToast) {
+            window.showToast(message); // Uses sp-blond native toast
+        } else {
+            alert(message);
+        }
+    }
+
+    window.clearBinData = function() {
+        if (confirm('모든 데이터를 삭제하시겠습니까?')) {
+            binData = [];
+            localStorage.removeItem(STORAGE_KEY);
+            renderBinTable();
+            showBinToast('데이터가 초기화되었습니다.');
+        }
+    };
+
+    window.downloadSample = function() {
+        const csvContent = "대상 행사,BIN번호,카드사명,결제망\\n현대카드,1234-56,현대,개인신용\\n현대백화점,1111-22,현대,법인카드\\n";
+        const blob = new Blob(["\\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "업로드_샘플양식.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    function updateBinFileName() {
+        const fileInput = document.getElementById('binCsvFile');
+        const fileNameDisplay = document.getElementById('binFileName');
+        if (fileInput.files.length > 0) {
+            fileNameDisplay.textContent = fileInput.files[0].name;
+        } else {
+            fileNameDisplay.textContent = "파일을 선택하거나 드래그 앤 드롭 하세요 (CSV, XLSX)";
+        }
+    }
+
+    window.uploadBinCsv = function() {
+        const fileInput = document.getElementById('binCsvFile');
+        if (fileInput.files.length === 0) {
+            showBinToast('파일을 선택해주세요.');
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const fileName = file.name.toLowerCase();
+        showBinLoading(true);
+
+        if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = e.target.result;
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const results = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                    processBinParsedData(results);
+                } catch (err) {
+                    showBinLoading(false);
+                    console.error(err);
+                    showBinToast('엑셀 파싱 중 오류가 발생했습니다.');
+                }
+            };
+            reader.onerror = function() {
+                showBinLoading(false);
+                showBinToast('파일 읽기 중 오류가 발생했습니다.');
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    processBinParsedData(results.data);
+                },
+                error: function(err) {
+                    showBinLoading(false);
+                    console.error(err);
+                    showBinToast('CSV 파싱 중 오류가 발생했습니다.');
+                }
+            });
+        }
+    };
+
+    function processBinParsedData(data) {
+        showBinLoading(false);
+        if (!data || data.length === 0) {
+            showBinToast('파일에 데이터가 없습니다.');
+            return;
+        }
+
+        let newItemsCount = 0;
+        
+        const existingBins = new Set();
+        binData.forEach(row => {
+            if (row['BIN번호']) {
+                existingBins.add(row['BIN번호'].toString().replace(/[^0-9]/g, ''));
+            }
+        });
+
+        data.forEach(row => {
+            const newRow = {};
+            for (let key in row) {
+                const rawVal = row[key];
+                newRow[key.trim()] = (rawVal !== undefined && rawVal !== null) ? String(rawVal).trim() : '';
+            }
+            if (!newRow['BIN번호']) return;
+            const cleanNewBin = newRow['BIN번호'].replace(/[^0-9]/g, '');
+            
+            if (!existingBins.has(cleanNewBin)) {
+                binData.push(newRow);
+                existingBins.add(cleanNewBin); // Add immediately to prevent duplicates within the uploaded file itself
+                newItemsCount++;
+            }
+        });
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(binData));
+        renderBinTable();
+        showBinToast(`신규 ${newItemsCount}건 추가완료! (총 ${binData.length}건)`);
+        
+        document.getElementById('binCsvFile').value = '';
+        updateBinFileName();
+    }
+
+    // Setup drag and drop
+    const fileLabel = document.getElementById('binFileLabel');
+    if(fileLabel) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, e => {
+                e.preventDefault(); e.stopPropagation();
+            }, false);
+        });
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, () => fileLabel.classList.add('dragover'), false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileLabel.addEventListener(eventName, () => fileLabel.classList.remove('dragover'), false);
+        });
+        fileLabel.addEventListener('drop', (e) => {
+            let files = e.dataTransfer.files;
+            if (files.length > 0) {
+                document.getElementById('binCsvFile').files = files;
+                updateBinFileName();
+            }
+        }, false);
+        document.getElementById('binCsvFile').addEventListener('change', updateBinFileName);
+    }
+})();
