@@ -179,6 +179,7 @@ const interestFreeInput = document.getElementById('interest-free-input');
 const interestFreeEditBtn = document.getElementById('interest-free-edit-btn');
 const interestFreeSaveBtn = document.getElementById('interest-free-save-btn');
 const interestFreeCancelBtn = document.getElementById('interest-free-cancel-btn');
+const binSystemBtn = document.getElementById('bin-system-btn');
 
 const searchBtn = document.getElementById('search-btn');
 const searchModal = document.getElementById('search-modal');
@@ -867,12 +868,14 @@ function renderRoster() {
         if (nextBtn) nextBtn.style.display = 'none';
         if (excludedBrandsBtn) excludedBrandsBtn.style.display = 'none';
         if (interestFreeBtn) interestFreeBtn.style.display = 'none';
+        if (binSystemBtn) binSystemBtn.style.display = 'none';
     } else {
         currentMonthDisplay.textContent = `${year}년 ${month + 1}월`;
         if (prevBtn) prevBtn.style.display = 'block';
         if (nextBtn) nextBtn.style.display = 'block';
         if (excludedBrandsBtn) excludedBrandsBtn.style.display = 'block';
         if (interestFreeBtn) interestFreeBtn.style.display = 'block';
+        if (binSystemBtn) binSystemBtn.style.display = 'block';
     }
     rosterGrid.innerHTML = '';
     // Remove any existing cal-type- classes
@@ -2415,7 +2418,7 @@ init();
     let binData = [];
 
     // Elements
-    const btnOpen = document.getElementById('bin-system-btn');
+    const btnOpen = binSystemBtn;
     const modal = document.getElementById('bin-system-modal');
     const btnClose = document.getElementById('bin-system-close-btn');
 
