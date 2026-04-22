@@ -2429,14 +2429,19 @@ init();
     window.toggleBinMode = function() {
         const isAdmin = document.getElementById('binModeSwitch').checked;
         if (isAdmin) {
-            // 관리자 모드: 조회 및 관리 모두 보이게 함 (guestSection 유지)
+            // 관리자 모드: 게스트 섹션(조회) 숨기고 관리 섹션 표시
+            guestSection.classList.remove('active');
+            guestSection.classList.add('hidden');
+
             adminSection.classList.remove('hidden');
             setTimeout(() => adminSection.classList.add('active'), 50);
         } else {
-            // 게스트 모드: 관리 섹션 숨김
+            // 게스트 모드: 관리 섹션 숨기고 게스트 섹션 표시
             adminSection.classList.remove('active');
             setTimeout(() => {
                 adminSection.classList.add('hidden');
+                guestSection.classList.remove('hidden');
+                guestSection.classList.add('active');
             }, 300);
             
             // 모드 전환 시 조회 데이터 초기화 (선택 사항이지만 유지)
