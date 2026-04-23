@@ -6,7 +6,8 @@ const LS_KEYS = {
     EMPLOYEES: 'sd_employeesData_all',
     ROW_ORDER: 'sd_rowOrder_2',
     EXCLUDED_BRANDS: 'sd_excluded_brands',
-    INTEREST_FREE: 'sd_interest_free'
+    INTEREST_FREE: 'sd_interest_free',
+    BIN_DATA: 'hyundai_bin_data'
 };
 
 // --- Firebase Initialization ---
@@ -261,6 +262,11 @@ function init() {
                 
                 if (typeof renderRoster === 'function') {
                     renderRoster();
+                }
+
+                // Refresh BIN data UI if it's the BIN data key
+                if (key === LS_KEYS.BIN_DATA && typeof loadBinData === 'function') {
+                    loadBinData();
                 }
 
                 const statusDot = document.getElementById('sync-status');
@@ -2416,7 +2422,7 @@ init();
    BIN Validation System Logic (Scoped)
    ========================================= */
 (function() {
-    const STORAGE_KEY = 'hyundai_bin_data';
+    const STORAGE_KEY = LS_KEYS.BIN_DATA;
     let binData = [];
 
     // Elements
@@ -2452,7 +2458,7 @@ init();
         }
     };
 
-    function loadBinData() {
+    window.loadBinData = function() {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
             binData = stored ? JSON.parse(stored) : [];
@@ -2621,7 +2627,7 @@ init();
     window.clearBinData = function() {
         if (confirm('모든 데이터를 삭제하시겠습니까?')) {
             binData = [];
-            localStorage.removeItem(STORAGE_KEY);
+            saveLocalState(STORAGE_KEY, []);
             renderBinTable();
             showBinToast('데이터가 초기화되었습니다.');
         }
@@ -2729,7 +2735,7 @@ init();
             }
         });
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(binData));
+        saveLocalState(STORAGE_KEY, binData);
         renderBinTable();
         showBinToast(`신규 ${newItemsCount}건 추가완료! (총 ${binData.length}건)`);
         
