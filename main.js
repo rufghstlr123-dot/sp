@@ -265,8 +265,8 @@ function init() {
                 }
 
                 // Refresh BIN data UI if it's the BIN data key
-                if (key === LS_KEYS.BIN_DATA && typeof loadBinData === 'function') {
-                    loadBinData();
+                if (key === LS_KEYS.BIN_DATA && typeof window.loadBinData === 'function') {
+                    window.loadBinData();
                 }
 
                 const statusDot = document.getElementById('sync-status');
@@ -2416,7 +2416,7 @@ function handleRowDrop(e) {
 
 window.deleteEmployee = deleteEmployee;
 
-init();
+// init() call moved to the end of file to ensure all components are loaded
 
 /* =========================================
    BIN Validation System Logic (Scoped)
@@ -2458,7 +2458,7 @@ init();
         }
     };
 
-    window.loadBinData = function() {
+    function loadBinData() {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
             binData = stored ? JSON.parse(stored) : [];
@@ -2766,4 +2766,8 @@ init();
         }, false);
         document.getElementById('binCsvFile').addEventListener('change', updateBinFileName);
     }
+    window.loadBinData = loadBinData;
 })();
+
+// Initialize application after all components (including BIN system) are defined
+init();
