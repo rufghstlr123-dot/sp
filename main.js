@@ -220,11 +220,6 @@ const searchInput = document.getElementById('search-input');
 const searchResultsList = document.getElementById('search-results-list');
 const searchNoResults = document.getElementById('search-no-results');
 
-const sidebarColWidthSection = document.getElementById('sidebar-col-width-section');
-const colWidthDaySelect = document.getElementById('col-width-day-select');
-const colWidthInput = document.getElementById('col-width-input');
-const colWidthApplyBtn = document.getElementById('col-width-apply-btn');
-const colWidthResetBtn = document.getElementById('col-width-reset-btn');
 const colWidthModal = document.getElementById('col-width-modal');
 const colWidthModalTitle = document.getElementById('col-width-modal-title');
 const colWidthModalCloseBtn = document.getElementById('col-width-modal-close-btn');
@@ -919,36 +914,6 @@ function applyShiftToTarget(key, shift) {
     }
 }
 
-function updateSidebarColWidthControls(year, month, daysInMonth) {
-    if (!sidebarColWidthSection) return;
-    if (!hasPermission('edit_holiday') || currentCalendarType === '미입점 브랜드') {
-        sidebarColWidthSection.style.display = 'none';
-        return;
-    }
-    sidebarColWidthSection.style.display = '';
-    if (!colWidthDaySelect || !colWidthInput) return;
-
-    const prevSelected = parseInt(colWidthDaySelect.value, 10);
-    const selectedDay = (prevSelected && prevSelected >= 1 && prevSelected <= daysInMonth) ? prevSelected : 1;
-
-    const mKey = getMonthKey();
-    colWidthDaySelect.innerHTML = '';
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dow = DAYS_KR[new Date(year, month, d).getDay()];
-        const customW = getColWidth(currentCalendarType, mKey, d);
-        const opt = document.createElement('option');
-        opt.value = d;
-        opt.textContent = customW ? `${d}일 (${dow}) [${customW}px]` : `${d}일 (${dow})`;
-        if (d === selectedDay) opt.selected = true;
-        colWidthDaySelect.appendChild(opt);
-    }
-
-    if (document.activeElement !== colWidthInput) {
-        const currentW = getColWidth(currentCalendarType, mKey, selectedDay);
-        colWidthInput.value = currentW || 100;
-    }
-}
-
 function openColWidthModal(day) {
     if (!hasPermission('edit_holiday') || !colWidthModal) return;
     activeColWidthDay = day;
@@ -957,12 +922,6 @@ function openColWidthModal(day) {
     const dow = DAYS_KR[new Date(year, month, day).getDay()];
     const currentW = getColWidth(currentCalendarType, getMonthKey(), day) || 100;
 
-    if (colWidthDaySelect) {
-        colWidthDaySelect.value = day;
-    }
-    if (colWidthInput) {
-        colWidthInput.value = currentW;
-    }
     if (colWidthModalTitle) {
         colWidthModalTitle.textContent = `${month + 1}월 ${day}일 (${dow}) 칸 넓이 조절`;
     }
@@ -1012,7 +971,6 @@ function renderRoster() {
     rosterGrid.classList.add(`cal-type-${currentCalendarType.replace(/\s+/g, '-')}`);
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    updateSidebarColWidthControls(year, month, daysInMonth);
 
     const mKey = getMonthKey();
     const dayColTracks = [];
@@ -2298,46 +2256,6 @@ function setupEventListeners() {
             closeColWidthModal();
         }
     };
-
-    if (colWidthDaySelect) {
-        colWidthDaySelect.addEventListener('change', () => {
-            const d = parseInt(colWidthDaySelect.value, 10);
-            if (colWidthInput && d) {
-                colWidthInput.value = getColWidth(currentCalendarType, getMonthKey(), d) || 100;
-            }
-        });
-    }
-
-    if (colWidthApplyBtn) {
-        colWidthApplyBtn.onclick = () => {
-            if (!colWidthDaySelect || !colWidthInput) return;
-            const d = parseInt(colWidthDaySelect.value, 10);
-            const w = parseInt(colWidthInput.value, 10);
-            if (d) {
-                saveColWidth(currentCalendarType, getMonthKey(), d, w);
-            }
-        };
-    }
-
-    if (colWidthInput) {
-        colWidthInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                if (colWidthApplyBtn) colWidthApplyBtn.click();
-            }
-        });
-    }
-
-    if (colWidthResetBtn) {
-        colWidthResetBtn.onclick = () => {
-            if (!colWidthDaySelect) return;
-            const d = parseInt(colWidthDaySelect.value, 10);
-            if (d) {
-                if (colWidthInput) colWidthInput.value = 100;
-                saveColWidth(currentCalendarType, getMonthKey(), d, 100);
-            }
-        };
-    }
 
     if (colWidthModalCloseBtn) {
         colWidthModalCloseBtn.onclick = closeColWidthModal;

@@ -702,12 +702,6 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   line-height: 1.2;
 }
 
-.col-width-sidebar-box {
-  padding: 0.45rem 0.8rem;
-  background: white;
-  border-bottom: 1px solid var(--border-color);
-}
-
 .r-header.sat {
   color: var(--text-main);
 }
