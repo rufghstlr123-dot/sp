@@ -7,7 +7,8 @@ const LS_KEYS = {
     ROW_ORDER: 'sd_rowOrder_2',
     EXCLUDED_BRANDS: 'sd_excluded_brands',
     INTEREST_FREE: 'sd_interest_free',
-    BIN_DATA: 'hyundai_bin_data'
+    BIN_DATA: 'sd_binData',
+    COL_WIDTHS: 'sd_colWidths'
 };
 
 // --- Firebase Initialization ---
@@ -22,7 +23,9 @@ let allMonthsEmployeesData = {};
 function saveLocalState(key, data) {
     try {
         // Save to Firebase (Remote)
-        db.ref(key).set(data);
+        db.ref(key).set(data).then(() => {
+            if (key === LS_KEYS.BIN_DATA) console.log("BIN Data synced to Firebase successfully");
+        });
         // Backup to LocalStorage
         localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
@@ -52,6 +55,30 @@ function saveRowOrder(calendarType, orderArray, monthKey) {
     saveLocalState(LS_KEYS.ROW_ORDER, orders);
 }
 
+function getColWidthKey(calendarType, monthKey, day) {
+    return `${calendarType}_${monthKey}_${day}`;
+}
+
+function getColWidth(calendarType, monthKey, day) {
+    const key = getColWidthKey(calendarType, monthKey, day);
+    const val = colWidthsData[key];
+    return val ? Number(val) : null;
+}
+
+function saveColWidth(calendarType, monthKey, day, widthPx) {
+    if (!hasPermission('edit_holiday')) return;
+    const key = getColWidthKey(calendarType, monthKey, day);
+    const num = Number(widthPx);
+    if (!widthPx || isNaN(num) || num === 100) {
+        delete colWidthsData[key];
+    } else {
+        const clamped = Math.max(50, Math.min(1500, Math.round(num)));
+        colWidthsData[key] = clamped;
+    }
+    saveLocalState(LS_KEYS.COL_WIDTHS, colWidthsData);
+    renderRoster();
+}
+
 document.documentElement.lang = "ko";
 
 // --- Application State ---
@@ -61,6 +88,8 @@ let scheduleData = {};  // Format: { "YYYY-MM-DD_eventId": "Memo/Status" }
 let employeesData = {}; // Format: { "eventId": { name: "Sale", details: "...", startDate: "...", endDate: "..." } }
 let customHolidaysData = {}; // Custom holiday name overrides
 let checkedData = {}; // Format: { "cellKey": true/false } для 연차/대휴 체크상태
+let colWidthsData = {}; // Format: { "calendarType_YYYY-M_day": widthPx }
+let activeColWidthDay = null;
 
 // Selections
 let sidebarSelectedShift = null;
@@ -191,6 +220,18 @@ const searchInput = document.getElementById('search-input');
 const searchResultsList = document.getElementById('search-results-list');
 const searchNoResults = document.getElementById('search-no-results');
 
+const sidebarColWidthSection = document.getElementById('sidebar-col-width-section');
+const colWidthDaySelect = document.getElementById('col-width-day-select');
+const colWidthInput = document.getElementById('col-width-input');
+const colWidthApplyBtn = document.getElementById('col-width-apply-btn');
+const colWidthResetBtn = document.getElementById('col-width-reset-btn');
+const colWidthModal = document.getElementById('col-width-modal');
+const colWidthModalTitle = document.getElementById('col-width-modal-title');
+const colWidthModalCloseBtn = document.getElementById('col-width-modal-close-btn');
+const colWidthModalInput = document.getElementById('col-width-modal-input');
+const colWidthModalApplyBtn = document.getElementById('col-width-modal-apply-btn');
+const colWidthModalResetBtn = document.getElementById('col-width-modal-reset-btn');
+
 let currentCalendarType = '사은행사';
 let editingEventId = null;
 // --- Initialization ---
@@ -254,6 +295,7 @@ function init() {
                 if (key === LS_KEYS.CUSTOM_HOLIDAYS) customHolidaysData = processedData;
                 if (key === LS_KEYS.CHECKED_STATUS) checkedData = processedData;
                 if (key === LS_KEYS.EMPLOYEES) employeesData = processedData;
+                if (key === LS_KEYS.COL_WIDTHS) colWidthsData = processedData || {};
                 if (key === LS_KEYS.MEMO) {
                     if (memoArea && !document.activeElement.classList.contains('memo-area')) {
                         memoArea.value = processedData || "";
@@ -265,8 +307,12 @@ function init() {
                 }
 
                 // Refresh BIN data UI if it's the BIN data key
-                if (key === LS_KEYS.BIN_DATA && typeof window.loadBinData === 'function') {
-                    window.loadBinData();
+                if (key === LS_KEYS.BIN_DATA) {
+                    console.log("BIN Data received from Firebase, refreshing UI...");
+                    // Firebase에서 받은 데이터를 직접 IIFE 내부 binData에 전달 (재fetch 방지)
+                    if (typeof window.updateBinDataDirect === 'function') {
+                        window.updateBinDataDirect(processedData);
+                    }
                 }
 
                 const statusDot = document.getElementById('sync-status');
@@ -275,6 +321,13 @@ function init() {
                     statusDot.title = "Firebase 연결됨";
                 }
             } else {
+                if (key === LS_KEYS.COL_WIDTHS) {
+                    colWidthsData = {};
+                    localStorage.removeItem(key);
+                    if (typeof renderRoster === 'function') {
+                        renderRoster();
+                    }
+                }
                 const statusDot = document.getElementById('sync-status');
                 if (statusDot) {
                     statusDot.style.background = "#22c55e"; 
@@ -393,6 +446,7 @@ function loadAllLocalData() {
     scheduleData = loadLocalState(LS_KEYS.SCHEDULE, {});
     customHolidaysData = loadLocalState(LS_KEYS.CUSTOM_HOLIDAYS, {});
     checkedData = loadLocalState(LS_KEYS.CHECKED_STATUS, {});
+    colWidthsData = loadLocalState(LS_KEYS.COL_WIDTHS, {});
 
     // Check current employees key
     let loadedEmployees = loadLocalState(LS_KEYS.EMPLOYEES, null);
@@ -865,6 +919,70 @@ function applyShiftToTarget(key, shift) {
     }
 }
 
+function updateSidebarColWidthControls(year, month, daysInMonth) {
+    if (!sidebarColWidthSection) return;
+    if (!hasPermission('edit_holiday') || currentCalendarType === '미입점 브랜드') {
+        sidebarColWidthSection.style.display = 'none';
+        return;
+    }
+    sidebarColWidthSection.style.display = '';
+    if (!colWidthDaySelect || !colWidthInput) return;
+
+    const prevSelected = parseInt(colWidthDaySelect.value, 10);
+    const selectedDay = (prevSelected && prevSelected >= 1 && prevSelected <= daysInMonth) ? prevSelected : 1;
+
+    const mKey = getMonthKey();
+    colWidthDaySelect.innerHTML = '';
+    for (let d = 1; d <= daysInMonth; d++) {
+        const dow = DAYS_KR[new Date(year, month, d).getDay()];
+        const customW = getColWidth(currentCalendarType, mKey, d);
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = customW ? `${d}일 (${dow}) [${customW}px]` : `${d}일 (${dow})`;
+        if (d === selectedDay) opt.selected = true;
+        colWidthDaySelect.appendChild(opt);
+    }
+
+    if (document.activeElement !== colWidthInput) {
+        const currentW = getColWidth(currentCalendarType, mKey, selectedDay);
+        colWidthInput.value = currentW || 100;
+    }
+}
+
+function openColWidthModal(day) {
+    if (!hasPermission('edit_holiday') || !colWidthModal) return;
+    activeColWidthDay = day;
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const dow = DAYS_KR[new Date(year, month, day).getDay()];
+    const currentW = getColWidth(currentCalendarType, getMonthKey(), day) || 100;
+
+    if (colWidthDaySelect) {
+        colWidthDaySelect.value = day;
+    }
+    if (colWidthInput) {
+        colWidthInput.value = currentW;
+    }
+    if (colWidthModalTitle) {
+        colWidthModalTitle.textContent = `${month + 1}월 ${day}일 (${dow}) 칸 넓이 조절`;
+    }
+    if (colWidthModalInput) {
+        colWidthModalInput.value = currentW;
+    }
+    colWidthModal.classList.remove('hidden');
+    setTimeout(() => {
+        if (colWidthModalInput) {
+            colWidthModalInput.focus();
+            colWidthModalInput.select();
+        }
+    }, 50);
+}
+
+function closeColWidthModal() {
+    if (colWidthModal) colWidthModal.classList.add('hidden');
+    activeColWidthDay = null;
+}
+
 // --- Display Logic ---
 function renderRoster() {
     const year = currentDate.getFullYear();
@@ -894,12 +1012,26 @@ function renderRoster() {
     rosterGrid.classList.add(`cal-type-${currentCalendarType.replace(/\s+/g, '-')}`);
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    updateSidebarColWidthControls(year, month, daysInMonth);
+
+    const mKey = getMonthKey();
+    const dayColTracks = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+        const customW = getColWidth(currentCalendarType, mKey, d);
+        if (customW && customW > 0) {
+            dayColTracks.push(`minmax(${customW}px, ${customW >= 100 ? '1fr' : customW + 'px'})`);
+        } else {
+            dayColTracks.push('minmax(100px, 1fr)');
+        }
+    }
+    const dayColsTemplate = dayColTracks.join(' ');
+
     if (currentCalendarType === '행사장') {
-        rosterGrid.style.gridTemplateColumns = `60px 120px repeat(${daysInMonth}, minmax(100px, 1fr))`;
+        rosterGrid.style.gridTemplateColumns = `60px 120px ${dayColsTemplate}`;
     } else if (currentCalendarType === '미입점 브랜드') {
         rosterGrid.style.gridTemplateColumns = `minmax(200px, auto) 1fr`;
     } else {
-        rosterGrid.style.gridTemplateColumns = `minmax(180px, auto) repeat(${daysInMonth}, minmax(100px, 1fr))`;
+        rosterGrid.style.gridTemplateColumns = `minmax(180px, auto) ${dayColsTemplate}`;
     }
 
     let currentRowIdx = 0;
@@ -1048,6 +1180,20 @@ function renderRoster() {
 
             headerCell.appendChild(numSpan);
             headerCell.appendChild(dowSpan);
+
+            if (hasPermission('edit_holiday')) {
+                const customW = getColWidth(currentCalendarType, mKey, day);
+                headerCell.classList.add('admin-clickable');
+                headerCell.title = `${day}일 칸 넓이 조절 (현재: ${customW || 100}px, 클릭하여 입력)`;
+                if (customW && customW !== 100) {
+                    const badge = document.createElement('span');
+                    badge.className = 'col-width-badge';
+                    badge.textContent = `${customW}`;
+                    headerCell.appendChild(badge);
+                }
+                headerCell.onclick = () => openColWidthModal(day);
+            }
+
             rosterGrid.appendChild(headerCell);
         }
 
@@ -2148,7 +2294,83 @@ function setupEventListeners() {
         if (e.target === searchModal) {
             searchModal.classList.add('hidden');
         }
+        if (e.target === colWidthModal) {
+            closeColWidthModal();
+        }
     };
+
+    if (colWidthDaySelect) {
+        colWidthDaySelect.addEventListener('change', () => {
+            const d = parseInt(colWidthDaySelect.value, 10);
+            if (colWidthInput && d) {
+                colWidthInput.value = getColWidth(currentCalendarType, getMonthKey(), d) || 100;
+            }
+        });
+    }
+
+    if (colWidthApplyBtn) {
+        colWidthApplyBtn.onclick = () => {
+            if (!colWidthDaySelect || !colWidthInput) return;
+            const d = parseInt(colWidthDaySelect.value, 10);
+            const w = parseInt(colWidthInput.value, 10);
+            if (d) {
+                saveColWidth(currentCalendarType, getMonthKey(), d, w);
+            }
+        };
+    }
+
+    if (colWidthInput) {
+        colWidthInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (colWidthApplyBtn) colWidthApplyBtn.click();
+            }
+        });
+    }
+
+    if (colWidthResetBtn) {
+        colWidthResetBtn.onclick = () => {
+            if (!colWidthDaySelect) return;
+            const d = parseInt(colWidthDaySelect.value, 10);
+            if (d) {
+                if (colWidthInput) colWidthInput.value = 100;
+                saveColWidth(currentCalendarType, getMonthKey(), d, 100);
+            }
+        };
+    }
+
+    if (colWidthModalCloseBtn) {
+        colWidthModalCloseBtn.onclick = closeColWidthModal;
+    }
+
+    if (colWidthModalApplyBtn) {
+        colWidthModalApplyBtn.onclick = () => {
+            if (!activeColWidthDay || !colWidthModalInput) return;
+            const w = parseInt(colWidthModalInput.value, 10);
+            saveColWidth(currentCalendarType, getMonthKey(), activeColWidthDay, w);
+            closeColWidthModal();
+        };
+    }
+
+    if (colWidthModalResetBtn) {
+        colWidthModalResetBtn.onclick = () => {
+            if (!activeColWidthDay) return;
+            saveColWidth(currentCalendarType, getMonthKey(), activeColWidthDay, 100);
+            closeColWidthModal();
+        };
+    }
+
+    if (colWidthModalInput) {
+        colWidthModalInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (colWidthModalApplyBtn) colWidthModalApplyBtn.click();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeColWidthModal();
+            }
+        });
+    }
 
     if (searchBtn) {
         searchBtn.onclick = () => {
@@ -2459,15 +2681,41 @@ window.deleteEmployee = deleteEmployee;
     };
 
     function loadBinData() {
-        try {
-            const stored = localStorage.getItem(STORAGE_KEY);
-            binData = stored ? JSON.parse(stored) : [];
+        // Firebase에서 직접 최신 데이터를 가져와 동기화
+        showBinLoading(true);
+        db.ref(STORAGE_KEY).once('value').then(snapshot => {
+            showBinLoading(false);
+            let data = snapshot.val();
+            // Firebase에서 배열이 객체(숫자 키)로 반환되는 경우 배열로 변환
+            if (data && !Array.isArray(data) && typeof data === 'object') {
+                data = Object.values(data);
+            }
+            if (data !== null && Array.isArray(data)) {
+                binData = data;
+                // LocalStorage도 최신화
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(binData));
+            } else {
+                // Firebase에 없으면 로컬 폴백
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    binData = stored ? JSON.parse(stored) : [];
+                } catch (e) {
+                    binData = [];
+                }
+            }
             renderBinTable();
-        } catch (e) {
-            console.error(e);
-            binData = [];
-            showBinToast('데이터를 불러오는데 실패했습니다.');
-        }
+        }).catch(e => {
+            showBinLoading(false);
+            console.error('Firebase BIN 데이터 로드 오류:', e);
+            // Firebase 실패 시 LocalStorage 폴백
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                binData = stored ? JSON.parse(stored) : [];
+            } catch (err) {
+                binData = [];
+            }
+            renderBinTable();
+        });
     }
 
     function renderBinTable() {
@@ -2767,6 +3015,21 @@ window.deleteEmployee = deleteEmployee;
         document.getElementById('binCsvFile').addEventListener('change', updateBinFileName);
     }
     window.loadBinData = loadBinData;
+
+    // Firebase listener에서 직접 데이터를 전달받아 binData를 갱신하는 함수
+    // loadBinData()와 달리 Firebase를 다시 fetch하지 않음
+    window.updateBinDataDirect = function(data) {
+        // Firebase에서 배열이 객체(숫자 키)로 반환되는 경우 배열로 변환
+        if (data && !Array.isArray(data) && typeof data === 'object') {
+            data = Object.values(data);
+        }
+        if (Array.isArray(data)) {
+            binData = data;
+        } else {
+            binData = [];
+        }
+        renderBinTable();
+    };
 })();
 
 // Initialize application after all components (including BIN system) are defined

@@ -96,6 +96,24 @@
           <button class="cal-tab" data-type="미입점 브랜드">미입점 브랜드</button>
         </div>
 
+        <div id="sidebar-col-width-section" class="admin-only">
+          <div class="sidebar-header">
+            <h3>칸 넓이 조절 (px)</h3>
+          </div>
+          <div class="col-width-sidebar-box">
+            <div style="display: flex; gap: 0.4rem; align-items: center;">
+              <select id="col-width-day-select" style="flex: 1; padding: 0.35rem 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.82rem; background-color: white;">
+              </select>
+              <input type="number" id="col-width-input" min="50" max="1500" step="10" placeholder="기본 100"
+                style="width: 85px; padding: 0.35rem 0.5rem; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.82rem;">
+            </div>
+            <div style="display: flex; gap: 0.4rem; margin-top: 0.4rem;">
+              <button id="col-width-apply-btn" class="primary-btn" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.8rem;">적용</button>
+              <button id="col-width-reset-btn" class="secondary-btn" style="flex: 1; margin-top: 0; padding: 0.35rem 0.5rem; font-size: 0.8rem;">기본값(100)</button>
+            </div>
+          </div>
+        </div>
+
         <div class="sidebar-header admin-only">
           <h3 id="sidebar-mgmt-header">행사 관리</h3>
         </div>
@@ -419,6 +437,28 @@
                 </div>
             </section>
         </main>
+      </div>
+    </div>
+  </div>
+
+  <!-- Column Width Modal (Admin Only) -->
+  <div id="col-width-modal" class="modal-backdrop hidden">
+    <div class="modal" style="max-width: 380px;">
+      <div class="modal-header" style="padding: 1.1rem 1.5rem;">
+        <h3 id="col-width-modal-title" style="color: var(--pr-color); font-size: 1.1rem;">칸 넓이 조절</h3>
+        <button id="col-width-modal-close-btn" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.25rem 1.5rem;">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="col-width-modal-input" style="font-size: 0.85rem; margin-bottom: 0.4rem;">넓이 입력 (단위: px, 기본값: 100)</label>
+          <input type="number" id="col-width-modal-input" min="50" max="1500" step="10" placeholder="100"
+            style="font-size: 1.1rem; padding: 0.65rem 0.8rem; font-weight: 600; text-align: center;">
+          <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; text-align: center;">숫자 입력 후 Enter 또는 적용 버튼을 누르세요. (50 ~ 1500)</p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button id="col-width-modal-apply-btn" class="primary-btn" style="flex: 1; padding: 0.65rem;">적용</button>
+          <button id="col-width-modal-reset-btn" class="secondary-btn" style="flex: 1; margin-top: 0; padding: 0.65rem;">기본값(100)</button>
+        </div>
       </div>
     </div>
   </div>
