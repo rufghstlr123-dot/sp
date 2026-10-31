@@ -388,7 +388,7 @@
                         </div>
                     </div>
                     <p class="subtitle" style="margin-bottom: 25px; opacity: 0.8; font-size: 0.95rem;">.csv 또는 .xlsx 파일을 업로드하여 BIN 데이터를 최신화할 수 있습니다.</p>
-                    <p style="font-size: 0.85rem; margin-bottom: 25px; color: rgba(255, 255, 255, 0.7); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px;">필수 컬럼 (헤더): <strong>대상 행사, BIN번호, 카드사명, 결제망</strong></p>
+                    <p style="font-size: 0.85rem; margin-bottom: 25px; color: rgba(255, 255, 255, 0.7); background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 8px;">필수 컬럼 (헤더): <strong>대상 행사, BIN번호, 카드사명, 결제망, 개인/법인카드 여부</strong></p>
 
                     <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px;">
                         <input type="file" id="binCsvFile" accept=".csv, .xlsx, .xls" class="bin-file-input">
@@ -411,6 +411,7 @@
                                     <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">BIN번호</th>
                                     <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">카드사명</th>
                                     <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">결제망</th>
+                                    <th style="background: #064334; position: sticky; top: 0; z-index: 10; padding: 15px; color: white;">개인/법인카드 여부</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>

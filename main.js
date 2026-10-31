@@ -2647,25 +2647,28 @@ window.deleteEmployee = deleteEmployee;
         
         const displayData = binData.slice(0, 100);
         if (displayData.length === 0) {
-            dataTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: rgba(255,255,255,0.5);">데이터가 없습니다.</td></tr>';
+            dataTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: rgba(255,255,255,0.5);">데이터가 없습니다.</td></tr>';
             return;
         }
 
         displayData.forEach(row => {
             const tr = document.createElement('tr');
             const safeBin = row['BIN번호'] ? row['BIN번호'].toString().replace(/[^0-9]/g, '').replace(/^(\d{4})(\d+)$/, '$1-$2') : '-';
+            const eventVal = row['대상 행사'] || row['대상행사'] || '-';
+            const cardTypeVal = row['개인/법인카드 여부'] || row['개인/법인카드여부'] || row['개인/법인'] || '-';
             tr.innerHTML = `
-                <td>${row['대상 행사'] || '-'}</td>
+                <td>${eventVal}</td>
                 <td>${safeBin}</td>
                 <td>${row['카드사명'] || '-'}</td>
                 <td>${row['결제망'] || '-'}</td>
+                <td>${cardTypeVal}</td>
             `;
             dataTableBody.appendChild(tr);
         });
         
         if (binData.length > 100) {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="4" style="text-align: center; color: rgba(255,255,255,0.5);">... 외 ${binData.length - 100}건 생략됨 ...</td>`;
+            tr.innerHTML = `<td colspan="5" style="text-align: center; color: rgba(255,255,255,0.5);">... 외 ${binData.length - 100}건 생략됨 ...</td>`;
             dataTableBody.appendChild(tr);
         }
     }
@@ -2697,14 +2700,15 @@ window.deleteEmployee = deleteEmployee;
         resultContainer.classList.remove('hidden', 'bin-result-success', 'bin-result-fail');
         
         if (match) {
-            const eventName = match['대상 행사'] || '알 수 없는 행사';
+            const eventName = match['대상 행사'] || match['대상행사'] || '알 수 없는 행사';
+            const cardTypeVal = match['개인/법인카드 여부'] || match['개인/법인카드여부'] || match['개인/법인'] || '-';
             resultContainer.classList.add('bin-result-success');
             resultContainer.innerHTML = `
                 <h3 class="bin-result-title"><strong style="color: #ffd86b; font-weight: 700;">${eventName}</strong> 행사 대상 카드입니다.</h3>
                 <div class="bin-info-grid">
                     <div class="bin-info-item">
                         <span class="bin-info-label">대상 행사</span>
-                        <span class="bin-info-value">${match['대상 행사'] || '-'}</span>
+                        <span class="bin-info-value">${match['대상 행사'] || match['대상행사'] || '-'}</span>
                     </div>
                     <div class="bin-info-item">
                         <span class="bin-info-label">BIN번호</span>
@@ -2717,6 +2721,10 @@ window.deleteEmployee = deleteEmployee;
                     <div class="bin-info-item">
                         <span class="bin-info-label">결제망</span>
                         <span class="bin-info-value">${match['결제망'] || '-'}</span>
+                    </div>
+                    <div class="bin-info-item">
+                        <span class="bin-info-label">개인/법인카드 여부</span>
+                        <span class="bin-info-value">${cardTypeVal}</span>
                     </div>
                 </div>
             `;
@@ -2801,8 +2809,8 @@ window.deleteEmployee = deleteEmployee;
     };
 
     window.downloadSample = function() {
-        const csvContent = "대상 행사,BIN번호,카드사명,결제망\\n현대카드,1234-56,현대,개인신용\\n현대백화점,1111-22,현대,법인카드\\n";
-        const blob = new Blob(["\\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const csvContent = "대상 행사,BIN번호,카드사명,결제망,개인/법인카드 여부\n현대카드,1234-56,현대,비자,개인카드\n현대백화점,1111-22,현대,국내전용,법인카드\n";
+        const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.setAttribute("href", url);
@@ -2890,7 +2898,15 @@ window.deleteEmployee = deleteEmployee;
             const newRow = {};
             for (let key in row) {
                 const rawVal = row[key];
-                newRow[key.trim()] = (rawVal !== undefined && rawVal !== null) ? String(rawVal).trim() : '';
+                const trimmedKey = key.trim();
+                const cleanVal = (rawVal !== undefined && rawVal !== null) ? String(rawVal).trim() : '';
+                if (trimmedKey === '대상행사') {
+                    newRow['대상 행사'] = cleanVal;
+                } else if (trimmedKey === '개인/법인카드여부' || trimmedKey === '개인/법인') {
+                    newRow['개인/법인카드 여부'] = cleanVal;
+                } else {
+                    newRow[trimmedKey] = cleanVal;
+                }
             }
             if (!newRow['BIN번호']) return;
             const cleanNewBin = newRow['BIN번호'].replace(/[^0-9]/g, '');

@@ -1425,6 +1425,10 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
     align-items: center;
 }
 
+.bin-info-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+}
+
 .bin-info-label {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.6);
