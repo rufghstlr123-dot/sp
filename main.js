@@ -2702,9 +2702,15 @@ window.deleteEmployee = deleteEmployee;
         if (match) {
             const eventName = match['대상 행사'] || match['대상행사'] || '알 수 없는 행사';
             const cardTypeVal = match['개인/법인카드 여부'] || match['개인/법인카드여부'] || match['개인/법인'] || '-';
-            resultContainer.classList.add('bin-result-success');
+            const isCorporate = String(cardTypeVal).includes('법인');
+
+            resultContainer.classList.add(isCorporate ? 'bin-result-fail' : 'bin-result-success');
+            const titleHtml = isCorporate
+                ? `<h3 class="bin-result-title" style="color: #ff9e9e; font-weight: 700;">행사 대상 카드가 아닙니다 (사유:법인카드)</h3>`
+                : `<h3 class="bin-result-title"><strong style="color: #ffd86b; font-weight: 700;">${eventName}</strong> 행사 대상 카드입니다.</h3>`;
+
             resultContainer.innerHTML = `
-                <h3 class="bin-result-title"><strong style="color: #ffd86b; font-weight: 700;">${eventName}</strong> 행사 대상 카드입니다.</h3>
+                ${titleHtml}
                 <div class="bin-info-grid">
                     <div class="bin-info-item">
                         <span class="bin-info-label">대상 행사</span>
