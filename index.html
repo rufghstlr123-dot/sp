@@ -366,10 +366,10 @@
             <!-- 게스트 모드 (카드 조회) -->
             <section id="binGuestSection" class="bin-section active">
                 <div class="bin-glass-panel" style="text-align: center; padding: 60px 40px;">
-                    <p class="subtitle" style="font-size: 1.15rem; margin-top: 10px; font-weight: 500; text-align: center; margin-bottom: 30px;">영수증에 적힌 카드번호의 첫 6자리를 입력하여 행사 대상 여부를 확인하세요.</p>
+                    <p class="subtitle" style="font-size: 1.15rem; margin-top: 10px; font-weight: 500; text-align: center; margin-bottom: 30px;">영수증에 적힌 카드번호의 첫 6자리 또는 8자리를 입력하여 행사 대상 여부를 확인하세요.</p>
                     
                     <div class="bin-search-container">
-                        <input type="text" id="binInput" placeholder="BIN번호 입력 (최대 6자리)" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                        <input type="text" id="binInput" placeholder="BIN번호 입력 (최대 8자리)" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         <button class="bin-btn bin-btn-primary" onclick="checkBin()">조회하기</button>
                     </div>
 

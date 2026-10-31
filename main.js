@@ -2680,12 +2680,17 @@ window.deleteEmployee = deleteEmployee;
             return;
         }
         const inputVal = binInput.value.trim();
-        if (inputVal.length !== 6) {
-            showBinToast('BIN 번호를 정확히 6자리 입력해주세요.');
+        if (inputVal.length !== 6 && inputVal.length !== 8) {
+            showBinToast('BIN 번호를 6자리 또는 8자리 입력해주세요.');
             return;
         }
 
         const match = binData.find(row => {
+            const dbBin = row['BIN번호'];
+            if (!dbBin) return false;
+            const cleanDbBin = dbBin.toString().replace(/[^0-9]/g, '');
+            return cleanDbBin === inputVal;
+        }) || binData.find(row => {
             const dbBin = row['BIN번호'];
             if (!dbBin) return false;
             const cleanDbBin = dbBin.toString().replace(/[^0-9]/g, '');
