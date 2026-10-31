@@ -2767,11 +2767,6 @@ window.deleteEmployee = deleteEmployee;
             if (!dbBin) return false;
             const cleanDbBin = dbBin.toString().replace(/[^0-9]/g, '');
             return cleanDbBin === inputVal;
-        }) || binData.find(row => {
-            const dbBin = row['BIN번호'];
-            if (!dbBin) return false;
-            const cleanDbBin = dbBin.toString().replace(/[^0-9]/g, '');
-            return cleanDbBin.startsWith(inputVal) || inputVal.startsWith(cleanDbBin);
         });
 
         renderBinResult(match, inputVal);
