@@ -2821,8 +2821,8 @@ window.deleteEmployee = deleteEmployee;
             resultContainer.innerHTML = `
                 <span class="bin-upload-icon">⚠️</span>
                 <h3 class="bin-result-title">정보를 찾을 수 없습니다</h3>
-                <p style="color:white;">입력하신 BIN번호(${inputVal})와 일치하는 카드 정보를 찾을 수 없습니다.</p>
-                <p style="margin-top:10px; font-size: 0.85rem; color:rgba(255,255,255,0.7);">번호를 다시 한 번 확인해주시거나 관리자에게 문의하세요.</p>
+                <p style="color:white;">실물 카드 확인 후 행사에 맞추어 지급해주세요.</p>
+                <p style="margin-top:10px; font-size: 0.85rem; color:rgba(255,255,255,0.7);">문제가 있을 경우, 관리자에게 문의하세요.</p>
             `;
         }
     }
