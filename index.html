@@ -10,7 +10,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20261031_2">
+  <link rel="stylesheet" href="style.css?v=20261031_3">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <!-- Firebase SDK (v8 compat) -->
@@ -366,7 +366,7 @@
             <!-- 게스트 모드 (카드 조회) -->
             <section id="binGuestSection" class="bin-section active">
                 <div class="bin-glass-panel" style="text-align: center; padding: 60px 40px;">
-                    <p class="subtitle" style="font-size: 1.15rem; margin-top: 10px; font-weight: 500; text-align: center; margin-bottom: 30px;">영수증에 적힌 카드번호의 첫 6자리 또는 8자리를 입력하여 행사 대상 여부를 확인하세요.</p>
+                    <p class="subtitle" style="font-size: 1.15rem; margin-top: 10px; font-weight: 500; text-align: center; margin-bottom: 30px; line-height: 1.6;">영수증에 적힌 카드번호의 첫 6자리 또는 8자리를 입력하여<br>행사 대상 여부를 확인하세요.</p>
                     
                     <div class="bin-search-container">
                         <input type="text" id="binInput" placeholder="BIN번호 입력 (최대 8자리)" maxlength="8" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
@@ -447,7 +447,7 @@
   </div>
 
   <!-- Application Logic -->
-  <script src="main.js?v=20261031_2"></script>
+  <script src="main.js?v=20261031_3"></script>
 </body>
 
 </html>

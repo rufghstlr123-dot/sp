@@ -22,12 +22,18 @@ let allMonthsEmployeesData = {};
 
 function saveLocalState(key, data) {
     try {
+        // Backup to LocalStorage first so synchronous Firebase validation errors never block local persistence
+        localStorage.setItem(key, JSON.stringify(data));
+    } catch (e) {
+        console.error("LocalStorage Save Error:", e);
+    }
+    try {
         // Save to Firebase (Remote)
         db.ref(key).set(data).then(() => {
             if (key === LS_KEYS.BIN_DATA) console.log("BIN Data synced to Firebase successfully");
+        }).catch((err) => {
+            console.error(`Firebase Sync Error (${key}):`, err);
         });
-        // Backup to LocalStorage
-        localStorage.setItem(key, JSON.stringify(data));
     } catch (e) {
         console.error("Firebase Sync Error:", e);
     }
@@ -2599,40 +2605,111 @@ window.deleteEmployee = deleteEmployee;
         }
     };
 
+    function sanitizeBinRow(row) {
+        if (!row || typeof row !== 'object') return null;
+        let eventVal = '';
+        let binVal = '';
+        let issuerVal = '';
+        let networkVal = '';
+        let cardTypeVal = '';
+
+        // Handle case where Firebase or nested object had '개인': { '법인카드 여부': ... }
+        if (row['개인'] && typeof row['개인'] === 'object') {
+            cardTypeVal = String(row['개인']['법인카드 여부'] || row['개인']['법인카드여부'] || row['개인']['법인'] || '').trim();
+        }
+
+        for (let key in row) {
+            if (!Object.prototype.hasOwnProperty.call(row, key)) continue;
+            const rawVal = row[key];
+            if (rawVal === undefined || rawVal === null || typeof rawVal === 'object') continue;
+            const cleanVal = String(rawVal).trim();
+            const normalizedKey = key.replace(/\s+/g, '').toLowerCase();
+
+            if (normalizedKey === '대상행사' || normalizedKey.includes('대상행사')) {
+                eventVal = cleanVal;
+            } else if (normalizedKey === 'bin번호' || normalizedKey === 'bin' || normalizedKey.includes('bin번호')) {
+                binVal = cleanVal;
+            } else if (normalizedKey === '카드사명' || normalizedKey === '카드사' || normalizedKey.includes('카드사')) {
+                issuerVal = cleanVal;
+            } else if (normalizedKey === '결제망' || normalizedKey.includes('결제망')) {
+                networkVal = cleanVal;
+            } else if (
+                normalizedKey.includes('개인/법인') ||
+                normalizedKey.includes('개인_법인') ||
+                normalizedKey.includes('법인카드여부') ||
+                normalizedKey === '개인법인' ||
+                normalizedKey === '구분'
+            ) {
+                cardTypeVal = cleanVal;
+            }
+        }
+
+        if (!binVal) return null;
+
+        return {
+            '대상 행사': eventVal,
+            'BIN번호': binVal,
+            '카드사명': issuerVal,
+            '결제망': networkVal,
+            '개인_법인카드 여부': cardTypeVal
+        };
+    }
+
+    function sanitizeBinDataArray(arr) {
+        if (!Array.isArray(arr)) return [];
+        const result = [];
+        arr.forEach(item => {
+            const clean = sanitizeBinRow(item);
+            if (clean) result.push(clean);
+        });
+        return result;
+    }
+
+    function getRowCardType(row) {
+        if (!row) return '-';
+        return row['개인_법인카드 여부'] || row['개인/법인카드 여부'] || row['개인/법인카드여부'] || row['개인/법인'] || '-';
+    }
+
     function loadBinData() {
-        // Firebase에서 직접 최신 데이터를 가져와 동기화
+        // 1. 먼저 LocalStorage에서 즉시 로드하여 화면에 반영
+        let localBinData = [];
+        try {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            const parsed = stored ? JSON.parse(stored) : [];
+            localBinData = sanitizeBinDataArray(Array.isArray(parsed) ? parsed : Object.values(parsed || {}));
+        } catch (e) {
+            localBinData = [];
+        }
+        if (localBinData.length > 0 && binData.length === 0) {
+            binData = localBinData;
+            renderBinTable();
+        }
+
+        // 2. Firebase에서 최신 데이터를 가져와 동기화
         showBinLoading(true);
         db.ref(STORAGE_KEY).once('value').then(snapshot => {
             showBinLoading(false);
             let data = snapshot.val();
-            // Firebase에서 배열이 객체(숫자 키)로 반환되는 경우 배열로 변환
             if (data && !Array.isArray(data) && typeof data === 'object') {
                 data = Object.values(data);
             }
-            if (data !== null && Array.isArray(data)) {
-                binData = data;
-                // LocalStorage도 최신화
+            const remoteBinData = sanitizeBinDataArray(data);
+
+            if (remoteBinData.length > 0) {
+                binData = remoteBinData;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(binData));
+            } else if (localBinData.length > 0) {
+                // Firebase에 데이터가 없지만 로컬에 있는 경우 로컬 데이터 유지 및 Firebase로 재동기화
+                binData = localBinData;
+                saveLocalState(STORAGE_KEY, binData);
             } else {
-                // Firebase에 없으면 로컬 폴백
-                try {
-                    const stored = localStorage.getItem(STORAGE_KEY);
-                    binData = stored ? JSON.parse(stored) : [];
-                } catch (e) {
-                    binData = [];
-                }
+                binData = [];
             }
             renderBinTable();
         }).catch(e => {
             showBinLoading(false);
             console.error('Firebase BIN 데이터 로드 오류:', e);
-            // Firebase 실패 시 LocalStorage 폴백
-            try {
-                const stored = localStorage.getItem(STORAGE_KEY);
-                binData = stored ? JSON.parse(stored) : [];
-            } catch (err) {
-                binData = [];
-            }
+            binData = localBinData;
             renderBinTable();
         });
     }
@@ -2655,7 +2732,7 @@ window.deleteEmployee = deleteEmployee;
             const tr = document.createElement('tr');
             const safeBin = row['BIN번호'] ? row['BIN번호'].toString().replace(/[^0-9]/g, '').replace(/^(\d{4})(\d+)$/, '$1-$2') : '-';
             const eventVal = row['대상 행사'] || row['대상행사'] || '-';
-            const cardTypeVal = row['개인/법인카드 여부'] || row['개인/법인카드여부'] || row['개인/법인'] || '-';
+            const cardTypeVal = getRowCardType(row);
             tr.innerHTML = `
                 <td>${eventVal}</td>
                 <td>${safeBin}</td>
@@ -2706,7 +2783,7 @@ window.deleteEmployee = deleteEmployee;
         
         if (match) {
             const eventName = match['대상 행사'] || match['대상행사'] || '알 수 없는 행사';
-            const cardTypeVal = match['개인/법인카드 여부'] || match['개인/법인카드여부'] || match['개인/법인'] || '-';
+            const cardTypeVal = getRowCardType(match);
             const isCorporate = String(cardTypeVal).includes('법인');
 
             resultContainer.classList.add(isCorporate ? 'bin-result-fail' : 'bin-result-success');
@@ -2759,6 +2836,8 @@ window.deleteEmployee = deleteEmployee;
             
             adminSection.classList.remove('active');
             adminSection.classList.add('hidden');
+            guestSection.classList.remove('hidden');
+            guestSection.classList.add('active');
             
             const binInput = document.getElementById('binInput');
             if (binInput) binInput.value = '';
@@ -2896,42 +2975,46 @@ window.deleteEmployee = deleteEmployee;
             return;
         }
 
+        // 기존 데이터도 Firebase 안전 키 포맷으로 정규화
+        binData = sanitizeBinDataArray(binData);
+
         let newItemsCount = 0;
+        let updatedItemsCount = 0;
         
-        const existingBins = new Set();
-        binData.forEach(row => {
+        const existingBinIndexMap = new Map();
+        binData.forEach((row, idx) => {
             if (row['BIN번호']) {
-                existingBins.add(row['BIN번호'].toString().replace(/[^0-9]/g, ''));
+                existingBinIndexMap.set(row['BIN번호'].toString().replace(/[^0-9]/g, ''), idx);
             }
         });
 
         data.forEach(row => {
-            const newRow = {};
-            for (let key in row) {
-                const rawVal = row[key];
-                const trimmedKey = key.trim();
-                const cleanVal = (rawVal !== undefined && rawVal !== null) ? String(rawVal).trim() : '';
-                if (trimmedKey === '대상행사') {
-                    newRow['대상 행사'] = cleanVal;
-                } else if (trimmedKey === '개인/법인카드여부' || trimmedKey === '개인/법인') {
-                    newRow['개인/법인카드 여부'] = cleanVal;
-                } else {
-                    newRow[trimmedKey] = cleanVal;
-                }
-            }
-            if (!newRow['BIN번호']) return;
-            const cleanNewBin = newRow['BIN번호'].replace(/[^0-9]/g, '');
-            
-            if (!existingBins.has(cleanNewBin)) {
-                binData.push(newRow);
-                existingBins.add(cleanNewBin); // Add immediately to prevent duplicates within the uploaded file itself
+            const cleanRow = sanitizeBinRow(row);
+            if (!cleanRow || !cleanRow['BIN번호']) return;
+            const cleanNewBin = cleanRow['BIN번호'].replace(/[^0-9]/g, '');
+            if (!cleanNewBin) return;
+
+            if (!existingBinIndexMap.has(cleanNewBin)) {
+                existingBinIndexMap.set(cleanNewBin, binData.length);
+                binData.push(cleanRow);
                 newItemsCount++;
+            } else {
+                // 이미 존재하는 BIN번호인 경우 최신 업로드 정보(개인/법인카드 여부 등)로 덮어쓰기
+                const existingIdx = existingBinIndexMap.get(cleanNewBin);
+                binData[existingIdx] = cleanRow;
+                updatedItemsCount++;
             }
         });
 
         saveLocalState(STORAGE_KEY, binData);
         renderBinTable();
-        showBinToast(`신규 ${newItemsCount}건 추가완료! (총 ${binData.length}건)`);
+        if (updatedItemsCount > 0 && newItemsCount === 0) {
+            showBinToast(`기존 ${updatedItemsCount}건 업데이트 완료! (총 ${binData.length}건)`);
+        } else if (updatedItemsCount > 0) {
+            showBinToast(`신규 ${newItemsCount}건 추가, ${updatedItemsCount}건 업데이트 완료! (총 ${binData.length}건)`);
+        } else {
+            showBinToast(`신규 ${newItemsCount}건 추가완료! (총 ${binData.length}건)`);
+        }
         
         document.getElementById('binCsvFile').value = '';
         updateBinFileName();
@@ -2965,12 +3048,11 @@ window.deleteEmployee = deleteEmployee;
     // Firebase listener에서 직접 데이터를 전달받아 binData를 갱신하는 함수
     // loadBinData()와 달리 Firebase를 다시 fetch하지 않음
     window.updateBinDataDirect = function(data) {
-        // Firebase에서 배열이 객체(숫자 키)로 반환되는 경우 배열로 변환
         if (data && !Array.isArray(data) && typeof data === 'object') {
             data = Object.values(data);
         }
         if (Array.isArray(data)) {
-            binData = data;
+            binData = sanitizeBinDataArray(data);
         } else {
             binData = [];
         }
