@@ -84,6 +84,7 @@ document.documentElement.lang = "ko";
 // --- Application State ---
 let currentUserRole = null; // 'admin' or 'guest'
 let currentDate = new Date();
+currentDate.setDate(1);
 let scheduleData = {};  // Format: { "YYYY-MM-DD_eventId": "Memo/Status" }
 let employeesData = {}; // Format: { "eventId": { name: "Sale", details: "...", startDate: "...", endDate: "..." } }
 let customHolidaysData = {}; // Custom holiday name overrides
@@ -1772,8 +1773,8 @@ function handleExternalPaste(dataMatrix) {
 
 // --- Interaction ---
 function setupEventListeners() {
-    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
-    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
+    if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1, 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
+    if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1, 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
 
     if (eventTypeSelect && eventTypeInput) {
         eventTypeSelect.addEventListener('change', () => {
