@@ -1480,8 +1480,7 @@ function renderRoster() {
                             const gridDisplayName = e.category === '행사장' ? (e.brand || '') : (e.name || '');
                             const gridDisplayDetail = e.category === '행사장' ? '' : (e.details || '');
 
-                            eventNamesHTML = `<div title="${gridDisplayDetail.replace(/"/g, '&quot;')} (클릭하여 수정)" 
-                                   style="font-size: 0.85rem; color: var(--text-main); text-align: left; position: absolute; left: 8px; right: 8px; top: 50%; transform: translateY(-50%); white-space: normal; word-break: break-all; z-index: 20; pointer-events: none; display: flex; flex-direction: column; gap: 5px;">
+                            eventNamesHTML = `<div class="event-sticky-label" title="${gridDisplayDetail.replace(/"/g, '&quot;')} (클릭하여 수정)">
                                 <div style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;">
                                     <strong style="font-weight:700; line-height: 1.1;">${gridDisplayName}</strong>
                                     ${(e.category !== '행사장' && e.budget) ? `<span style="font-size: 0.72rem; font-weight: 700; color: #ef4444; opacity: 1;">[${e.budget}만]</span>` : ''}
@@ -1505,7 +1504,7 @@ function renderRoster() {
                     }
 
                     cell.innerHTML = `
-                        <div style="display: flex; flex-direction: column; width: 100%; align-items: center; justify-content: center; height: 100%; padding: 0;">
+                        <div class="r-entry-inner">
                             ${eventNamesHTML}
                         </div>
                     `;
@@ -1540,7 +1539,19 @@ function renderRoster() {
             console.error("Error rendering type row:", err);
         }
     });
+    updateRosterStickyMetrics();
 }
+
+function updateRosterStickyMetrics() {
+    const wrapper = document.querySelector('.roster-wrapper');
+    if (!wrapper || !rosterGrid) return;
+    const firstDayHeader = rosterGrid.querySelector('.r-header');
+    const stickyWidth = firstDayHeader ? firstDayHeader.offsetLeft : 180;
+    const visibleWidth = Math.max(120, wrapper.clientWidth - stickyWidth - 16);
+    rosterGrid.style.setProperty('--sticky-left-width', `${stickyWidth}px`);
+    rosterGrid.style.setProperty('--roster-visible-width', `${visibleWidth}px`);
+}
+window.addEventListener('resize', updateRosterStickyMetrics);
 
 // --- Excel Navigation Logic ---
 function moveSelection(dRow, dCol, shift = false, ctrl = false) {

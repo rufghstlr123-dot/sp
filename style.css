@@ -881,6 +881,34 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   background: #f7f7f7;
 }
 
+.r-entry-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: center;
+  height: 100%;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.event-sticky-label {
+  position: sticky;
+  left: calc(var(--sticky-left-width, 180px) + 8px);
+  width: fit-content;
+  max-width: min(100%, var(--roster-visible-width, 100%));
+  font-size: 0.85rem;
+  color: var(--text-main);
+  text-align: left;
+  white-space: normal;
+  word-break: break-all;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
 /* Shift Badges inside spreadsheet */
 .shift-A {
   color: var(--shift-A) !important;
