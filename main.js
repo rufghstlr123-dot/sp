@@ -1790,6 +1790,28 @@ function handleExternalPaste(dataMatrix) {
 
 // --- Interaction ---
 function setupEventListeners() {
+    const mainContentEl = document.querySelector('.main-content');
+    const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+    if (mainContentEl && sidebarToggleBtn) {
+        const applySidebarState = (collapsed) => {
+            mainContentEl.classList.toggle('sidebar-collapsed', collapsed);
+            sidebarToggleBtn.setAttribute('aria-expanded', String(!collapsed));
+            const label = collapsed ? '사이드바 펼치기' : '사이드바 접기';
+            sidebarToggleBtn.setAttribute('aria-label', label);
+            sidebarToggleBtn.setAttribute('title', label);
+        };
+        applySidebarState(localStorage.getItem('sd_sidebarCollapsed') === 'true');
+        sidebarToggleBtn.addEventListener('click', () => {
+            const nextCollapsed = !mainContentEl.classList.contains('sidebar-collapsed');
+            applySidebarState(nextCollapsed);
+            try {
+                localStorage.setItem('sd_sidebarCollapsed', String(nextCollapsed));
+            } catch (e) {
+                console.error("Sidebar state save error:", e);
+            }
+        });
+    }
+
     if (prevBtn) prevBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() - 1, 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
     if (nextBtn) nextBtn.onclick = () => { currentDate.setMonth(currentDate.getMonth() + 1, 1); loadEmployeesForCurrentMonth(); listenToCurrentMonthInterestFree(); renderRoster(); };
 

@@ -379,17 +379,68 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 /* Sidebar for Employee Management */
 .employee-sidebar {
   width: 280px;
+  flex-shrink: 0;
   background: #fdfdfd;
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100%;
+  transition: width 0.25s ease, opacity 0.2s ease;
+}
+
+.main-content.sidebar-collapsed .employee-sidebar {
+  width: 0;
+  border-right-width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  left: 280px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 48px;
+  padding: 0;
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-left: none;
+  border-radius: 0 6px 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  z-index: 30;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
+  transition: left 0.25s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background: var(--pr-light);
+  color: var(--pr-color);
+}
+
+.sidebar-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.25s ease;
+}
+
+.main-content.sidebar-collapsed .sidebar-toggle-btn {
+  left: 0;
+}
+
+.main-content.sidebar-collapsed .sidebar-toggle-btn svg {
+  transform: rotate(180deg);
 }
 
 .sidebar-header {
