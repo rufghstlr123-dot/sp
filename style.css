@@ -419,7 +419,7 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   justify-content: center;
   cursor: pointer;
   color: var(--text-muted);
-  z-index: 30;
+  z-index: 200;
   box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
   transition: left 0.25s ease, background 0.2s ease, color 0.2s ease;
 }
