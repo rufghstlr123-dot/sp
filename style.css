@@ -410,23 +410,23 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   width: 18px;
   height: 48px;
   padding: 0;
-  background: #ffffff;
-  border: 1px solid var(--border-color);
+  background: #10b981;
+  border: 1px solid #059669;
   border-left: none;
   border-radius: 0 6px 6px 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: var(--text-muted);
+  color: #ffffff;
   z-index: 200;
-  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.06);
+  box-shadow: 2px 0 8px rgba(16, 185, 129, 0.35);
   transition: left 0.25s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .sidebar-toggle-btn:hover {
-  background: var(--pr-light);
-  color: var(--pr-color);
+  background: #059669;
+  color: #ffffff;
 }
 
 .sidebar-toggle-btn svg {
