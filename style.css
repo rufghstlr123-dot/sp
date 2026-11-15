@@ -410,8 +410,8 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   width: 18px;
   height: 48px;
   padding: 0;
-  background: #10b981;
-  border: 1px solid #059669;
+  background: var(--pr-color);
+  border: 1px solid #1a5c38;
   border-left: none;
   border-radius: 0 6px 6px 0;
   display: flex;
@@ -420,12 +420,12 @@ body:has(.modal-backdrop:not(.hidden)) .app-container {
   cursor: pointer;
   color: #ffffff;
   z-index: 200;
-  box-shadow: 2px 0 8px rgba(16, 185, 129, 0.35);
+  box-shadow: 2px 0 8px rgba(33, 115, 70, 0.3);
   transition: left 0.25s ease, background 0.2s ease, color 0.2s ease;
 }
 
 .sidebar-toggle-btn:hover {
-  background: #059669;
+  background: #1a5c38;
   color: #ffffff;
 }
 
